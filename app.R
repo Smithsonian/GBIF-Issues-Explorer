@@ -22,7 +22,10 @@ source("database.R")
 ################################
 #Settings
 ################################
-gbif_ie_ver <- "0.1"
+app_name <- "GBIF Issues Explorer"
+app_ver <- "0.1"
+github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
+
 database_file <- "data/gbif.sqlite"
 occ_file <- "data/occurrence.txt"
 ver_file <- "data/verbatim.txt"
@@ -37,7 +40,7 @@ no_rows <- 20000
 ################################
 ui <- fluidPage(
   # App title ----
-  titlePanel("GBIF Issues Explorer"),
+  titlePanel(app_name),
   fluidRow(column(width = 5,
                   uiOutput("download_doi")
                   ),
@@ -87,7 +90,7 @@ ui <- fluidPage(
               )
       ),
   hr(),
-  HTML(paste0("<p><a href=\"http://dpo.si.edu\" target = _blank><img src=\"circlelogo.png\"> Digitization Program Office</a> | GBIF Issues Explorer ver. ", gbif_ie_ver, " | <a href=\"https://github.com/Smithsonian/GBIF-Issues-Explorer\" target = _blank>Source code</a></p>"))
+  HTML(paste0("<p><a href=\"http://dpo.si.edu\" target = _blank><img src=\"circlelogo.png\"> Digitization Program Office</a> | ", app_name, " ver. ", app_ver, " | <a href=\"", github_link, "\" target = _blank>Source code</a></p>"))
 )
 
 
@@ -295,12 +298,9 @@ server <- function(input, output) {
     progress$set(message = "Loading data", value = 0.8)
     
     
-    
-    
     #Close db to cleanup
     dbDisconnect(gbif_db)
   }
-  
   
   
   #Open database
