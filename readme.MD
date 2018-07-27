@@ -5,10 +5,10 @@ This [Shiny](https://shiny.rstudio.com/) app allows researchers and data/collect
 The app can be used to:
 
  * Determine the source of issues:
-   ** Researchers can determine if the data is usable for a particular analysis
-   ** Collection and data managers can check their own database and figure out the source of the problem and fix it in the next update to GBIF
+   * Researchers can determine if the data is usable for a particular analysis
+   * Collection and data managers can check their own database and figure out the source of the problem and fix it in the next update to GBIF
  * Determine if an issue would affect an analysis:
-   ** For example, a COUNTRY_COORDINATE_MISMATCH could be because the coordinates fall just outside the country borders. Is this an error in the coordinates or an expected result of an occurrence in water?
+   * For example, a COUNTRY_COORDINATE_MISMATCH could be because the coordinates fall just outside the country borders. Is this an error in the coordinates or an expected result of an occurrence in water?
 
 To use, just save the contents of a Darwin Core Archive download to the `data` folder. You should have these files in the `data` folder:
 
