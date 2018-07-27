@@ -2,6 +2,8 @@
 
 This [Shiny](https://shiny.rstudio.com/) app allows researchers and data/collection managers to navigate the records with issues in a GBIF Darwin Core download.
 
+![gbif](https://user-images.githubusercontent.com/2302171/43324300-c916968c-9181-11e8-8a47-5cd262820efe.png)
+
 The app can be used to:
 
  * Determine the source of issues:
