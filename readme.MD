@@ -2,13 +2,13 @@
 
 This Shiny app allows to navigate the records with issues in a GBIF dataset downloaded as Darwin Core.
 
-To use, just save the contents of a Darwin Core Archive to the `data` folder. You should have in `data`:
+To use, just save the contents of a Darwin Core Archive to the `data` folder. You should have these files in the `data` folder:
 
  * metadata.xml
  * occurrence.txt
  * verbatim.txt
  * multimedia.txt
- * dataset/*.xml
+ * dataset/*.xml (can be one or many)
 
 The app requires these packages:
 
