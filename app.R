@@ -101,6 +101,8 @@ ui <- fluidPage(
 ################################
 server <- function(input, output) {
   
+  rm("registerShinyDebugHook", envir = as.environment("tools:rstudio"))
+  
   # Create a Progress object
   # from https://shiny.rstudio.com/articles/progress.html
   progress <- shiny::Progress$new()
@@ -311,6 +313,7 @@ server <- function(input, output) {
   dl_meta_file <- xmlToList("data/metadata.xml")
   output$download_doi <- renderText({
     this_doi <- dl_meta_file$additionalMetadata$metadata$`gbif`$citation$.attrs
+    
     HTML(paste0("<a href=\"https://doi.org/", this_doi, "\" target = _blank>GBIF Occurrence Download ", this_doi,"</a>"))
   })
   
@@ -343,11 +346,11 @@ server <- function(input, output) {
   
   #Plot issues
   output$summaryPlot <- renderPlot({
-    ggplot(data = summary_vals, aes(x = issue, y = no_records, label = issue)) +
+    ggplot(data = summary_vals, aes(x = issue, y = no_records, label = issue, colour = issue, fill = issue)) +
       geom_col() +
       coord_flip() + 
       scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
-      theme(axis.text = element_text(size=12), axis.title = element_text(size=14, face = "bold")) + 
+      theme(axis.text = element_text(size=12), axis.title = element_text(size=14, face = "bold"), legend.position="none") + 
       xlab("Issue") +
       ylab("No. of records")
   })
