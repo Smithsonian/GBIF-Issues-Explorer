@@ -84,7 +84,7 @@ output$summaryPlot3 <- renderPlot({
     geom_tile(aes(fill = no_records), color = "white") +
     theme(
           axis.title = element_blank(), 
-          legend.position="top", 
+          legend.position="right", 
           #axis.text.x = element_text(size=10, angle = 45, hjust = 1),
           #axis.text.y = element_text(size=10, angle = 45),
           axis.text = element_text(size = 10),
@@ -93,7 +93,7 @@ output$summaryPlot3 <- renderPlot({
     scale_y_discrete(limits = levels(issues_summ$issue_b)) + 
     scale_fill_gradient(low = "yellow", high = "red") + 
     labs(
-        fill = "No. of records with both issues", 
+        fill = "No. of records\nwith both\nissues", 
         title = "Related Issues"
         )
   

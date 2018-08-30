@@ -127,6 +127,17 @@ create_issuetable_query <- 'CREATE TABLE issues(ID INTEGER PRIMARY KEY, gbifID I
 long_loading_msg <- "(this may take a while depending on the size of the download)"
 
 
+# Check gbif key
+check_gbif <- function(gbif_key){
+  res <- try(jsonlite::fromJSON(paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key)), silent = TRUE)
+  if (class(res) == "try-error"){
+    return(FALSE)
+  }else{
+    return(res)
+  }
+}
+
+
 
 # Download from GBIF ----
 download_gbif <- function(gbif_key, export_dir){

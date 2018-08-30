@@ -11,7 +11,7 @@ library(shiny)
 
 # Load/install packages ----
 #from https://stackoverflow.com/a/4090208
-list.of.packages <- c("DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "data.table", "RSQLite", "jsonlite", "R.utils")
+list.of.packages <- c("DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "data.table", "RSQLite", "jsonlite", "R.utils", "shinyWidgets")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)){
   install.packages(new.packages)
@@ -68,7 +68,6 @@ ui <- fluidPage(
                   ),
                   column(width = 6,
                          br(),
-                         #h3("Number of records by issue"),
                          plotOutput("summaryPlot", height = 600)
                          )
                 ),
@@ -76,22 +75,17 @@ ui <- fluidPage(
                 fluidRow(
                   column(width = 6,
                          br(),
-                         #h3("Related Issues"),
                          plotOutput("summaryPlot3", height = 600)
                          ),
                   column(width = 6,
                          br(),
-                         #h3("Number of issues per record"),
-                         #p("Percent is from total no. of rows"),
                          plotOutput("summaryPlot2", height = 600)
                          )
                 ),
-                
                 hr()
-                
-                
-                  ),
+                ),
               tabPanel("Explore", 
+                       h3("Once the data is loaded, you can explore the issues."),
                        fluidRow(
                        column(width = 4,
                               br(),
@@ -109,17 +103,14 @@ ui <- fluidPage(
                        column(width = 4,
                               br(),
                               uiOutput("downloadOccFileInfo")
-                       ),
+                            ),
                        column(width = 4,
                               br(),
                               uiOutput("downloadVerFileInfo")
                               
-                       )
-                                   ),
-                       
-                       
+                            )
+                        ),
                        hr(), 
-                       
                        fluidRow(column(width=7,
                                        fluidRow(column(width=8,                
                                                        HTML("<dl><dt>"),
@@ -132,18 +123,17 @@ ui <- fluidPage(
                                               uiOutput("no_records")
                                        )
                                        ),
-                                       
                                        DT::dataTableOutput("table")
                        ),
                        
                        column(width=5, 
-                              conditionalPanel("input.table_rows_selected != ''",
-                                               #HTML("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">Record details</h3></div><div class=\"panel-body\">"),
-                                               uiOutput("recorddetail_top"),
-                                               uiOutput("recorddetail"),
-                                               leafletOutput("mymap"),
-                                               uiOutput("recorddetail_bot")
-                                               #HTML("</div></div>")
+                              conditionalPanel("input.table_rows_selected != null && input.table_rows_selected != ''",
+                                               shinyWidgets::panel(
+                                                 heading = "Record detail",
+                                                 status = "primary",
+                                                 uiOutput("recorddetail"),
+                                                  leafletOutput("mymap")
+                                               )
                               )
                        )
                        )
@@ -171,7 +161,7 @@ ui <- fluidPage(
 # Server ----
 server <- function(input, output, session) {
   
-  rm("registerShinyDebugHook", envir = as.environment("tools:rstudio"))
+  #rm("registerShinyDebugHook", envir = as.environment("tools:rstudio"))
   dir.create("data", showWarnings = FALSE)
   
   if (persistent_db){
@@ -198,12 +188,31 @@ server <- function(input, output, session) {
   # Submit button ----
   observeEvent(input$submitkey, {
     cat(input$gbif_key)
+    
+    progress0 <- shiny::Progress$new()
+    progress0$set(message = "Downloading file", value = 0.1)
+    on.exit(progress0$close())
+    
+    gbif_check <- check_gbif(input$gbif_key)
+    if (class(gbif_metadata) == "list"){
+      dl_size <- gbif_check$size
+      dl_size_human <- hsize(dl_size)
+    }else{
+      cat("Could not find key")
+      req(FALSE)
+    }
+    
+    progress0$set(message = paste0("Downloading file of size: ", dl_size_human, ". Please wait."), value = 0.1)
+    
     gbif_metadata <- download_gbif(input$gbif_key, "data")
     if (class(gbif_metadata) == "list"){
       gbif_metadata <<- gbif_metadata
     }else{
-      cat("Could not find key")
+      stop("Could not download file")
     }
+    
+    progress0$set(message = "Downloading file", value = 1)
+    progress0$close()
     
     if (file.exists("data/occurrence.txt")){
       # Create a Progress object
@@ -252,9 +261,13 @@ server <- function(input, output, session) {
         no_lines <- R.utils::countLines(occ_file)[1]
         
         #how many steps?
-        no_steps <- ceiling(no_lines/no_rows)
+        no_steps <- floor(no_lines/no_rows)
         progress_val <- 0.12
         progress_steps <- ((0.9 - progress_val) / no_steps)
+        
+        if (no_steps ==0){
+          no_steps <- 1
+        }
         
         #loop to occ_file
         for (i in 1:no_steps){
@@ -298,9 +311,13 @@ server <- function(input, output, session) {
         
         if (no_lines > 1){
           #how many steps?
-          no_steps <- ceiling(no_lines/no_rows)
+          no_steps <- floor(no_lines/no_rows)
           progress_val <- 0.12
           progress_steps <- ((0.9 - progress_val) / no_steps)
+          
+          if (no_steps == 0){
+            no_steps <- 1
+          }
           
           #loop to make loading easier
           for (i in 1:no_steps){
@@ -383,34 +400,7 @@ server <- function(input, output, session) {
       
       
       # Metadata of Download ----
-      dl_meta_file <- xmlToList("data/metadata.xml")
-      output$download_doi <- renderText({
-        this_doi <- dl_meta_file$additionalMetadata$metadata$`gbif`$citation$.attrs
-        gbif_key <- dl_meta_file$dataset$alternateIdentifier
-        
-        metadata_json <- paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key)
-        
-        gbif_metadata <- unlist(jsonlite::fromJSON(metadata_json))
-        
-        html_to_print <- paste0("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Occurrence Download Metadata</h3></div><div class=\"panel-body\"><div style = \"overflow-y: auto; overflow-x: scroll;\"><dl class=\"dl-horizontal\">")
-        
-        for (i in 1:length(gbif_metadata)){
-          html_to_print <- paste0(html_to_print, "<dt>", names(gbif_metadata[i]), "</dt>")
-          if (names(gbif_metadata[i]) == "doi"){
-            html_to_print <- paste0(html_to_print, "<dd><a href=\"https://doi.org/", gbif_metadata[i], "\" target = _blank>", gbif_metadata[i], "</a></dd>")
-          }else if(names(gbif_metadata[i]) == "downloadLink" || names(gbif_metadata[i]) == "license"){
-            html_to_print <- paste0(html_to_print, "<dd><a href=\"", gbif_metadata[i], "\" target = _blank>", gbif_metadata[i], "</a></dd>")
-          }else{
-            html_to_print <- paste0(html_to_print, "<dd>", gbif_metadata[i], "</dd>")
-          }
-          
-        }
-        
-        html_to_print <- paste0(html_to_print, "</dl>")
-        html_to_print <- paste0(html_to_print, "<p><a href=\"", metadata_json, "\" target = _blank>Metadata JSON</a>")
-        html_to_print <- paste0(html_to_print, "</div></div></div>")
-        HTML(html_to_print)
-      })
+      eval(parse("dlmeta.R"))
       
       
       # Get rows with issues ----
@@ -474,34 +464,7 @@ server <- function(input, output, session) {
     gbif_db <<- dbConnect(RSQLite::SQLite(), database_file)
     
     # Metadata of Download ----
-    dl_meta_file <- xmlToList("data/metadata.xml")
-    output$download_doi <- renderText({
-      this_doi <- dl_meta_file$additionalMetadata$metadata$`gbif`$citation$.attrs
-      gbif_key <- dl_meta_file$dataset$alternateIdentifier
-      
-      metadata_json <- paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key)
-      
-      gbif_metadata <- unlist(jsonlite::fromJSON(metadata_json))
-      
-      html_to_print <- paste0("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Occurrence Download Metadata</h3></div><div class=\"panel-body\"><div style = \"overflow-y: auto; overflow-x: scroll;\"><dl class=\"dl-horizontal\">")
-      
-      for (i in 1:length(gbif_metadata)){
-        html_to_print <- paste0(html_to_print, "<dt>", names(gbif_metadata[i]), "</dt>")
-        if (names(gbif_metadata[i]) == "doi"){
-          html_to_print <- paste0(html_to_print, "<dd><a href=\"https://doi.org/", gbif_metadata[i], "\" target = _blank>", gbif_metadata[i], "</a></dd>")
-        }else if(names(gbif_metadata[i]) == "downloadLink" || names(gbif_metadata[i]) == "license"){
-          html_to_print <- paste0(html_to_print, "<dd><a href=\"", gbif_metadata[i], "\" target = _blank>", gbif_metadata[i], "</a></dd>")
-        }else{
-          html_to_print <- paste0(html_to_print, "<dd>", gbif_metadata[i], "</dd>")
-        }
-        
-      }
-      
-      html_to_print <- paste0(html_to_print, "</dl>")
-      html_to_print <- paste0(html_to_print, "<p><a href=\"", metadata_json, "\" target = _blank>Metadata JSON</a>")
-      html_to_print <- paste0(html_to_print, "</div></div></div>")
-      HTML(html_to_print)
-    })
+    eval(parse("dlmeta.R"))
     
     
     # Get rows with issues
@@ -526,8 +489,8 @@ server <- function(input, output, session) {
   
   # Table of records with issue ----
   datarows <- reactive({
+    
     req(input$i)
-    #gbif_db <<- dbConnect(RSQLite::SQLite(), database_file)
     
     #Which cols to display by type of issue
     if (input$i == "None"){
@@ -557,7 +520,6 @@ server <- function(input, output, session) {
   output$table <- DT::renderDataTable({
 
     req(input$i)
-    #gbif_db <<- dbConnect(RSQLite::SQLite(), database_file)
 
     #Which cols to display by type of issue
     if (input$i == "None"){
@@ -586,30 +548,14 @@ server <- function(input, output, session) {
   })
   
   
-  # Show the values using an HTML table
-  
-  # output$table = DT::renderDataTable(escape = FALSE, options = list(searching = TRUE, ordering = TRUE), rownames = FALSE, selection = 'single', isolate({
-  #   datarows()
-  # }))
-  
-  # observe({
-  #   replaceData(proxy, datarows(), resetPaging = FALSE)
-  # })
-  
-  
-  
   
   
   
   
   # Record map ----
   output$mymap <- renderLeaflet({
-    
     req(input$i)
-    
-    #if (input$i %in% spatial_issues){
       datarows <- dbGetQuery(gbif_db, paste0("SELECT gbifID, decimalLatitude, decimalLongitude FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and ignorerow = 0"))
-
       points <- datarows[input$table_rows_selected,]
       
       #check if lat and lon exist
@@ -620,7 +566,6 @@ server <- function(input, output, session) {
         addProviderTiles(providers$Esri.NatGeoWorldMap) %>%
         addMarkers(lng = points$decimalLongitude, lat = points$decimalLatitude) %>%
         setView(points$decimalLongitude, points$decimalLatitude, zoom = 04)
-     # }
   })
   
   
@@ -635,7 +580,6 @@ server <- function(input, output, session) {
     }else{
       this_summary_ids <- dbGetQuery(gbif_db, paste0("SELECT gbifID FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and ignorerow = 0"))
     }
-    
     
     this_record <- dbGetQuery(gbif_db, paste0("SELECT * FROM gbif WHERE gbifID = ", this_summary_ids[input$table_rows_selected,]))
     this_record_dataset <- dbGetQuery(gbif_db, paste0("SELECT * FROM datasets WHERE datasetKey in (SELECT datasetKey FROM gbif WHERE gbifID = ", this_record$gbifID, ")"))
@@ -712,19 +656,6 @@ server <- function(input, output, session) {
   
   
   
-  # details of record_top ----
-  output$recorddetail_top <- renderUI({
-    req(input$table_rows_selected)
-    HTML("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">Record details</h3></div><div class=\"panel-body\">")
-  })
-  
-  # details of record_bot ----
-  output$recorddetail_bot <- renderUI({
-    req(input$table_rows_selected)
-    HTML("</div></div>")
-  })
-  
- 
   
   # Proxy for DT ----
   proxy = dataTableProxy('table')
@@ -734,9 +665,9 @@ server <- function(input, output, session) {
     req(input$table_rows_selected)
     
     if (input$i == "None"){
-      this_summary_ids <- dbGetQuery(gbif_db, "SELECT gbifID FROM gbif WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues)")
+      this_summary_ids <- dbGetQuery(gbif_db, "SELECT gbifID FROM gbif WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) AND ignorerow = 0")
     }else{
-      this_summary_ids <- dbGetQuery(gbif_db, paste0("SELECT gbifID FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "')"))
+      this_summary_ids <- dbGetQuery(gbif_db, paste0("SELECT gbifID FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') AND ignorerow = 0"))
     }
     #cat(this_summary_ids)
     this_record <- dbExecute(gbif_db, paste0("UPDATE gbif SET ignorerow = 1 WHERE gbifID = ", this_summary_ids[input$table_rows_selected,]))
@@ -795,9 +726,10 @@ server <- function(input, output, session) {
     }
     if (this_count > 0){
       this_count_pretty <- prettyNum(this_count, big.mark = ",", scientific=FALSE)
-      HTML(paste0("<p><strong>", this_count_pretty , " records</strong><br>Click for details</p>"))
+      #HTML(paste0("<p><strong>", this_count_pretty , " records</strong><br>Click for details</p>"))
+      HTML(paste0("<p class=\"pull-right\">Click a record for details</p>"))
     }else{
-      HTML(paste0("<p><strong>No records found</strong></p>"))
+      HTML(paste0("<p class=\"pull-right\"><strong>No records found</strong></p>"))
     }
   })
   
@@ -912,26 +844,17 @@ server <- function(input, output, session) {
   # Help1 ----
   output$help1 <- renderUI({
     HTML("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">How to use this tool</h3></div><div class=\"panel-body\">
-         <p>This system will take the string in the column \"Taxonomy\" and match it with the Taxonomy from EPICC. The process tries to find a match taking into account the variety of ways that a scientific name can appear. 
-         <p>The match is done by first removing words and characters like:
+         <p>This system will take a key for a GBIF download and display the issues in the data contained. Once provided with the GBIF key, this tool will:
          <ul>
-         <li>?</li>
-         <li>af.</li>
-         <li>cf.</li>
-         <li>spp.</li>
-         <li>n. sp.</li>
+         <li>Download the zip archive</li>
+         <li>Extract the files</li>
+         <li>Create a local database</li>
+         <li>Load the data from the occurrence, verbatim, multimedia, and dataset tables to the database</li>
+         <li>Generate summary statistics of the issues</li>
          </ul>
-         <p>Then, the system tries to match the string by looking at possible ways to match:
-         <ul>
-         <li>Genus</li>              
-         <li>Genus (Subgenus)</li>
-         <li>Genus species</li>
-         <li>Genus species Author</li>
-         <li>Genus (Subgenus) species</li>
-         <li>Genus (Subgenus) species Author</li>
-         <li>Synonym</li>
-         </ul>
-         <p>To match another CSV you don't need to reload the taxonomy file. Just browse for a new CSV, the taxonomy is already in memory.</p>
+         <p>Then, you can click on the 'Explore' tab to see how many records have been tagged with a particular issue.
+         <p>Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown. You can choose to delete the row from the local database. 
+         <p>After deleting records, you can download the verbatim and/or occurrence files without these deleted records.
          </div></div>")
   })
   
@@ -939,24 +862,9 @@ server <- function(input, output, session) {
   output$help2 <- renderUI({
     HTML("
          <div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Download Key</h3></div><div class=\"panel-body\">
-        <p>The key is obtained when requesting a download of occurrence data from GBIF. :
-          <dl class=\"dl-horizontal\">
-              <dt>sciname</dt><dd>The string used to find a match</dd>
-              <dt>accepted_name</dt><dd>Concatenated (Genus Species) from the taxonomy file</d>
-              <dt>synonym</dt><dd>The synonym matched to the sciname</dd>
-              <dt>fuzzy_match</dt><dd>Name matched to using a fuzzy matching algorithm (score in parenthesis) *</d>
-              <dt>phylum</dt><dd>The Phylum of the accepted_name from the taxonomy file</dd>
-              <dt>class</dt><dd>The Class of the accepted_name from the taxonomy file</dd>
-              <dt>order</dt><dd>The Order of the accepted_name from the taxonomy file</dd>
-              <dt>family</dt><dd>The Family of the accepted_name from the taxonomy file</dd>
-              <dt>genus</dt><dd>The Genus of the accepted_name from the taxonomy file</dd>
-              <dt>subgenus</dt><dd>The Subgenus of the accepted_name from the taxonomy file</dd>
-              <dt>species</dt><dd>The Species of the accepted_name from the taxonomy file</dd>
-              <dt>author</dt><dd>The \"AUTHOR\" of the accepted_name from the taxonomy file</dd>
-         </dl>
-        <p>If the Taxonomy column had more than one name, separated by pipes (|), each name is returned in a separate row.</p>
-        <p>* Fuzzy matching uses the \"osa\" method in the function stringdist::stringdist(), for details see van der Loo (2014).</p>
-        <pre>van der Loo, Mark (2014). The stringdist Package for Approximate String Matching</a>. The R Journal 6: 111-122.</pre>
+        <p>The key is obtained when requesting a download of occurrence data from GBIF. It can be requested via their API or on the website. If your download URL is:
+          <pre>https://www.gbif.org/occurrence/download/0001419-180824113759888</pre>
+          <p>Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool.
          </div></div>")
   })
   
