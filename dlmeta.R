@@ -1,6 +1,6 @@
 
 # Metadata of Download ----
-dl_meta_file <- xmlToList("data/metadata.xml")
+dl_meta_file <- XML::xmlToList("data/metadata.xml")
 output$download_doi <- renderText({
   this_doi <- dl_meta_file$additionalMetadata$metadata$`gbif`$citation$.attrs
   gbif_key <- dl_meta_file$dataset$alternateIdentifier
@@ -9,7 +9,7 @@ output$download_doi <- renderText({
   
   gbif_metadata <- unlist(jsonlite::fromJSON(metadata_json))
   
-  html_to_print <- paste0("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Occurrence Download Metadata</h3></div><div class=\"panel-body\"><div style = \"overflow-y: auto; overflow-x: scroll;\"><dl class=\"dl-horizontal\">")
+  html_to_print <- paste0("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Occurrence Download Metadata</h3></div><div class=\"panel-body\"><div style = \"overflow-y: auto; overflow-x: auto;\"><dl class=\"dl-horizontal\">")
   
   for (i in 1:length(gbif_metadata)){
     html_to_print <- paste0(html_to_print, "<dt>", names(gbif_metadata[i]), "</dt>")

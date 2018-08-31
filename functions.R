@@ -147,10 +147,14 @@ download_gbif <- function(gbif_key, export_dir){
     return(FALSE)
   }else{
     dl <- try(download.file(paste0("http://api.gbif.org/v1/occurrence/download/request/", gbif_key), destfile = paste0(gbif_key, ".zip"), mode = "wb"), silent = TRUE)
-    #extract to data/
-    unzip(zipfile = paste0(gbif_key, ".zip"), exdir = export_dir)
-    file.remove(paste0(gbif_key, ".zip"))
-    return(res)
+    if (class(dl) == "try-error"){
+      return(FALSE)
+    }else{
+      #extract to data/
+      unzip(zipfile = paste0(gbif_key, ".zip"), exdir = export_dir)
+      file.remove(paste0(gbif_key, ".zip"))
+      return(res)
+    }
   }
 }
 
@@ -204,7 +208,3 @@ create_database <- function(database_file, dataset_xml_path){
   # Close db ----
   dbDisconnect(gbif_db)
 }
-
-
-
-

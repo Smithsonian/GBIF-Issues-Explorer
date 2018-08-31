@@ -20,6 +20,6 @@ Always write a clear log message for your commits. One-line messages are fine fo
 Thanks,
 
 Luis J. Villanueva  
-Informatics Program Office  
+Informatics Program Officer 
 DPO  
 Smithsonian

@@ -14,17 +14,17 @@ output$summaryPlot <- renderPlot({
     summary_vals <- rbind(summary_vals, cbind(distinct_issues[i], as.numeric(this_issue[1])))
   }
   
-  #no issues
-  this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM issues WHERE issue = ''"))
-  summary_vals <- rbind(summary_vals, cbind("None", as.numeric(this_issue[1])))
+  # #no issues
+  # this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM gbif WHERE issue = ''"))
+  # summary_vals <- rbind(summary_vals, cbind("None", as.numeric(this_issue[1])))
   
   names(summary_vals) <- c("issue", "no_records")
   summary_vals$no_records <- as.numeric(paste(summary_vals$no_records))
   
   
   #Sort by no of cases
-  summary_vals <- summary_vals[order(-summary_vals$no_records),]
-  summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(summary_vals$no_records)])
+  #summary_vals <- summary_vals[order(-summary_vals$no_records),]
+  summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(-summary_vals$no_records)])
   levels(summary_vals$issue) <- gsub("_", "\n", levels(summary_vals$issue))
 
   # Close db ----
@@ -53,6 +53,10 @@ output$summaryPlot <- renderPlot({
 # Plot records with multiple issues ----
 output$summaryPlot2 <- renderPlot({
   issues_by_rec <- dbGetQuery(gbif_db, "select a.no_issues as no_issues, count(a.gbifID) as no_records, round((count(a.gbifID + 0.0)/(b.total_records + 0.0))*100,2) as percent from (select gbifID, count(*) as no_issues from issues group by gbifID) a, (select count(gbifID) as total_records from gbif) b group by a.no_issues")
+  
+  issues_by_rec_none <- dbGetQuery(gbif_db, "select 0 as no_issues, count(a.gbifID) as no_records, round((count(a.gbifID + 0.0)/(b.total_records + 0.0))*100,2) as percent from (select gbifID from gbif WHERE gbifID NOT IN (select gbifID from issues)) a, (select count(gbifID) as total_records from gbif) b")
+  
+  issues_by_rec <- rbind(issues_by_rec, issues_by_rec_none)
   
   ggplot(data = issues_by_rec, aes(x = no_issues, y = no_records, label = percent, colour = no_issues, fill = no_issues)) +
     geom_col() +

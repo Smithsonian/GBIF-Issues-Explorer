@@ -1,17 +1,17 @@
 # Persistent database? ----
-# T: Keep the database once built, or
-# F: destroy at the end of each session
-persistent_db <- FALSE
+# TRUE: Keep the database once built, or
+# FALSE: destroy at the end of each session
+persistent_db <- TRUE
 
-# Don't edit anything below this line
+# No need to edit anything below this line
 
 
-# Load shiny ----
-library(shiny)
+
+
 
 # Load/install packages ----
 #from https://stackoverflow.com/a/4090208
-list.of.packages <- c("DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "data.table", "RSQLite", "jsonlite", "R.utils", "shinyWidgets")
+list.of.packages <- c("shiny", "DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "data.table", "RSQLite", "jsonlite", "R.utils", "shinyWidgets", "shinycssloaders")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)){
   install.packages(new.packages)
@@ -49,106 +49,101 @@ no_rows <- 20000
 
 # UI ----
 ui <- fluidPage(
-  # App title ----
-  #titlePanel(app_name),
-  #tabsetPanel(type = "tabs",
   navbarPage(app_name,
-              tabPanel("Summary", 
-                fluidRow(column(width = 4,
-                                br(),
-                                uiOutput("ask_key")
-                                )
+     # Tab:Summary ----
+      tabPanel("Summary", 
+        br(),
+        uiOutput("ask_key"),
+        fluidRow(
+          column(width = 6,
+                 br(),
+                 withSpinner(uiOutput("download_doi"))
+          ),
+          column(width = 6,
+                 br(),
+                 withSpinner(plotOutput("summaryPlot", height = 600))
+                 )
+        ),
+        
+        fluidRow(
+          column(width = 6,
+                 br(),
+                 withSpinner(plotOutput("summaryPlot3", height = 600))
+                 ),
+          column(width = 6,
+                 br(),
+                 withSpinner(plotOutput("summaryPlot2", height = 600))
+                 )
+        )
+        ),
+     
+     # Tab:Explore ----
+      tabPanel("Explore", 
+               h3("Once the data is loaded, you can explore the issues."),
+               fluidRow(
+               column(width = 4,
+                      br(),
+                      uiOutput("distinct_issues"),
+                      uiOutput("downloadData"),
+                      HTML('<script type="text/javascript">
+                           $(document).ready(function() {
+                           $("#downloadData").click(function() {
+                           $("#downloadData2").text("Loading data, please wait...").attr(\'disabled\',\'disabled\');
+                           });
+                           });
+                           </script>
+                           ')
+                           ),
+               column(width = 4,
+                      br(),
+                      uiOutput("downloadOccFileInfo")
                     ),
-                
-           
-                fluidRow(
-                  column(width = 6,
-                         br(),
-                         uiOutput("download_doi")
-                  ),
-                  column(width = 6,
-                         br(),
-                         plotOutput("summaryPlot", height = 600)
-                         )
+               column(width = 4,
+                      br(),
+                      uiOutput("downloadVerFileInfo")
+                      
+                    )
                 ),
-                
-                fluidRow(
-                  column(width = 6,
-                         br(),
-                         plotOutput("summaryPlot3", height = 600)
-                         ),
-                  column(width = 6,
-                         br(),
-                         plotOutput("summaryPlot2", height = 600)
-                         )
-                ),
-                hr()
-                ),
-              tabPanel("Explore", 
-                       h3("Once the data is loaded, you can explore the issues."),
-                       fluidRow(
-                       column(width = 4,
-                              br(),
-                              uiOutput("distinct_issues"),
-                              uiOutput("downloadData"),
-                              HTML('<script type="text/javascript">
-                                   $(document).ready(function() {
-                                   $("#downloadData").click(function() {
-                                   $("#downloadData2").text("Loading data, please wait...").attr(\'disabled\',\'disabled\');
-                                   });
-                                   });
-                                   </script>
-                                   ')
-                                   ),
-                       column(width = 4,
-                              br(),
-                              uiOutput("downloadOccFileInfo")
-                            ),
-                       column(width = 4,
-                              br(),
-                              uiOutput("downloadVerFileInfo")
-                              
-                            )
-                        ),
-                       hr(), 
-                       fluidRow(column(width=7,
-                                       fluidRow(column(width=8,                
-                                                       HTML("<dl><dt>"),
-                                                       strong(textOutput("issuename")),
-                                                       HTML("</dt><dd>"),
-                                                       textOutput("issuedescript"),
-                                                       HTML("</dd></dl>")
-                                       ),
-                                       column(width=4,
-                                              uiOutput("no_records")
-                                       )
-                                       ),
-                                       DT::dataTableOutput("table")
-                       ),
-                       
-                       column(width=5, 
-                              conditionalPanel("input.table_rows_selected != null && input.table_rows_selected != ''",
-                                               shinyWidgets::panel(
-                                                 heading = "Record detail",
-                                                 status = "primary",
-                                                 uiOutput("recorddetail"),
-                                                  leafletOutput("mymap")
-                                               )
-                              )
-                       )
-                       )
-              ),
-              tabPanel("Help", 
-                       br(),
-                       fluidRow(
-                         column(width = 6, 
-                                uiOutput("help1")
-                         ),
-                         column(width = 6, 
-                                uiOutput("help2")
-                         )
-                       )
-              )
+               hr(), 
+               fluidRow(column(width=7,
+                     fluidRow(column(width=8,                
+                           HTML("<dl><dt>"),
+                           strong(textOutput("issuename")),
+                           HTML("</dt><dd>"),
+                           textOutput("issuedescript"),
+                           HTML("</dd></dl>")
+                     ),
+                     column(width=4,
+                            uiOutput("no_records")
+                     )
+                     ),
+                     withSpinner(DT::dataTableOutput("table"))
+               ),
+               
+               column(width=5, 
+                      conditionalPanel("input.table_rows_selected != null && input.table_rows_selected != ''",
+                           shinyWidgets::panel(
+                             heading = "Record detail",
+                             status = "primary",
+                             uiOutput("recorddetail"),
+                              leafletOutput("mymap")
+                           )
+                      )
+               )
+          )
+      ),
+     # Tab:Help ----
+      tabPanel("Help", 
+           br(),
+           fluidRow(
+             column(width = 6, 
+                    uiOutput("help1")
+             ),
+             column(width = 6, 
+                    uiOutput("help2")
+             )
+           )
+      )
   ),
   hr(),
   HTML(paste0("<p><a href=\"http://dpo.si.edu\" target = _blank><img src=\"circlelogo.png\"> Digitization Program Office</a> | ", app_name, " ver. ", app_ver, " | <a href=\"", github_link, "\" target = _blank>Source code</a></p>"))
@@ -194,7 +189,7 @@ server <- function(input, output, session) {
     on.exit(progress0$close())
     
     gbif_check <- check_gbif(input$gbif_key)
-    if (class(gbif_metadata) == "list"){
+    if (class(gbif_check) == "list"){
       dl_size <- gbif_check$size
       dl_size_human <- hsize(dl_size)
     }else{
@@ -218,7 +213,6 @@ server <- function(input, output, session) {
       # Create a Progress object
       progress <- shiny::Progress$new()
       progress$set(message = "Loading data", value = 0.05)
-      # Close the progress when this reactive exits (even if there's an error)
       on.exit(progress$close())
       
       # No db, occ file ----
@@ -240,9 +234,7 @@ server <- function(input, output, session) {
         progress3$set(message = "Loading multimedia table", value = 0.05)
         on.exit(progress3$close())
         
-        
         db_created <- try(create_database(database_file, "data/dataset/"))
-        
         
         if (class(db_created) == "try-error"){
           stop("Could not create database.")
@@ -353,7 +345,7 @@ server <- function(input, output, session) {
         
         
         # Statistics of issues ----
-        progress1$set(value = 0.1, message = "Generating statistics")
+        progress$set(value = 0.7, message = "Generating statistics")
         
         issue_list <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM gbif WHERE issue != ''")
         
@@ -366,19 +358,11 @@ server <- function(input, output, session) {
         }
         
         distinct_issues <- unique(unlist(issues_list))
-        
-        progress_val <- 0.1
-        progress_steps <- ((1 - progress_val) / length(distinct_issues))
-        
+
         #summary 
         for (i in 1:length(distinct_issues)){
           dbExecute(gbif_db, paste0("INSERT INTO issues (gbifID, issue) SELECT gbifID, '", distinct_issues[i], "' FROM gbif WHERE issue LIKE '%", distinct_issues[i], "%'"))
-          progress1$set(value = progress_val)
-          progress_val <- progress_val + progress_steps
         }
-        
-        progress1$set(value = 1.0, message = "Done reading occurrence records")
-        progress1$close()
         
         progress$set(message = "Loading data", value = 0.9)
         
@@ -387,7 +371,7 @@ server <- function(input, output, session) {
         #try(unlink("data/*.txt", recursive = TRUE), silent = TRUE)
         #try(unlink("data/*.xml", recursive = TRUE), silent = TRUE)
         
-        progress$set(message = "Loading data", value = 1.0)
+        progress$set(message = "Done loading data... Loading app.", value = 1.0)
         progress$close()
         
         # Close db ----
@@ -407,7 +391,7 @@ server <- function(input, output, session) {
       distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
       distinct_issues <- unlist(distinct_issues, use.names = FALSE)
       
-      #summary 
+      #summary_vals ---- 
       summary_vals <- data.frame(matrix(ncol = 2, nrow = 0, data = NA))
       
       for (i in 1:length(distinct_issues)){
@@ -428,6 +412,7 @@ server <- function(input, output, session) {
       summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(summary_vals$no_records)])
       
       summary_vals <<- summary_vals
+      
       #Done loading data
       progress$set(value = 1.0, message = "Data ready. Loading Shiny app...")
       progress$close()
@@ -435,25 +420,17 @@ server <- function(input, output, session) {
     
     
     
-    
-    
-  
-    
-    #distinct_issues pulldown
+    #distinct_issues pulldown ----
     output$distinct_issues <- renderUI({
       selectInput(inputId = "i",
                   label = "Select an issue:", 
-                  choices = append(c("None - Show summary" = "None"), distinct_issues),
+                  choices = distinct_issues,
                   width = 360
       )
     })
-
     
     # Summary ----
     eval(parse("summary.R"))
-    
-    
-    
   })
   
   
@@ -466,30 +443,26 @@ server <- function(input, output, session) {
     # Metadata of Download ----
     eval(parse("dlmeta.R"))
     
-    
     # Get rows with issues
     distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
     distinct_issues <- unlist(distinct_issues, use.names = FALSE)
     
-    #distinct_issues pulldown
+    #distinct_issues pulldown ----
     output$distinct_issues <- renderUI({
       selectInput(inputId = "i",
                   label = "Select an issue:", 
-                  choices = append(c("None - Show summary" = "None"), distinct_issues),
+                  choices = distinct_issues,
                   width = 360
       )
     })
     
-    
     # Summary ----
     eval(parse("summary.R"))
-    
   }
   
   
   # Table of records with issue ----
   datarows <- reactive({
-    
     req(input$i)
     
     #Which cols to display by type of issue
@@ -508,9 +481,13 @@ server <- function(input, output, session) {
     }
     
     if (input$i == "None"){
-      datarows <- dbGetQuery(gbif_db, paste0("SELECT ", cols, " FROM verbatim WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)"))
+      query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
+      cat(query)
+      datarows <- dbGetQuery(gbif_db, query)
     }else{
-      datarows <- dbGetQuery(gbif_db, paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)"))
+      query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
+      cat(query)
+      datarows <- dbGetQuery(gbif_db, query)
     }
     df <- data.frame(datarows, stringsAsFactors = FALSE)
     
@@ -518,34 +495,11 @@ server <- function(input, output, session) {
   })
 
   output$table <- DT::renderDataTable({
-
     req(input$i)
-
-    #Which cols to display by type of issue
-    if (input$i == "None"){
-      cols <- "gbifID, scientificName, decimalLatitude, decimalLongitude, locality, country"
-    }else if (input$i %in% spatial_issues){
-      cols <- "gbifID, scientificName, decimalLatitude, decimalLongitude, locality, country"
-    }else if (input$i %in% depth_issues){
-      cols <- "gbifID, scientificName, minimumDepthInMeters, maximumDepthInMeters, verbatimDepth"
-    }else if (input$i %in% elev_issues){
-      cols <- "gbifID, scientificName, minimumElevationInMeters, maximumElevationInMeters, verbatimElevation"
-    }else if (input$i %in% date_issues){
-      cols <- "gbifID, scientificName, eventDate, eventTime, startDayOfYear, endDayOfYear,year, month, day"
-    }else{
-      cols <- "gbifID, scientificName, recordedBy, locality, country"
-    }
-
-    if (input$i == "None"){
-      datarows <- dbGetQuery(gbif_db, paste0("SELECT ", cols, " FROM verbatim WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)"))
-    }else{
-      datarows <- dbGetQuery(gbif_db, paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)"))
-    }
-
-    DT::datatable(datarows, escape = FALSE, options = list(searching = TRUE, ordering = TRUE), rownames = FALSE, selection = 'single', isolate({
+    DT::datatable(datarows(), escape = FALSE, options = list(searching = FALSE, ordering = FALSE, pageLength = 10), rownames = FALSE, selection = 'single', isolate({
       datarows()
     }))
-  })
+  }, server = TRUE)
   
   
   
@@ -572,7 +526,6 @@ server <- function(input, output, session) {
   
   # details of record ----
   output$recorddetail <- renderUI({
-      
     req(input$table_rows_selected)
     
     if (input$i == "None"){
@@ -622,7 +575,6 @@ server <- function(input, output, session) {
       }
     }
     
-    
     #Images
     images <- dbGetQuery(gbif_db, paste0("SELECT * FROM multimedia WHERE gbifID = ", this_record$gbifID, " AND type = 'StillImage'"))
     if (dim(images)[1] > 0){
@@ -650,18 +602,18 @@ server <- function(input, output, session) {
     
     html_to_print <- paste0(html_to_print, "</dl>")
     
-    HTML(html_to_print)
+    verbatim_json <- paste0("http://api.gbif.org/v1/occurrence/", this_record$gbifID, "/verbatim")
     
+    html_to_print <- paste0(html_to_print, "<a href=\"", verbatim_json, "\" target = _blank>Verbatim JSON</a><br>")
+    
+    HTML(html_to_print)
   })
   
-  
-  
-  
+
   # Proxy for DT ----
   proxy = dataTableProxy('table')
   # Delete row ----
   observeEvent(input$delrecord, {
-    
     req(input$table_rows_selected)
     
     if (input$i == "None"){
@@ -694,7 +646,6 @@ server <- function(input, output, session) {
     
     datarows <- data.frame(datarows, stringsAsFactors = FALSE)
     replaceData(proxy, datarows, rownames = FALSE)
-    
   })
   
   
@@ -702,7 +653,6 @@ server <- function(input, output, session) {
   
   # Name of issue ----
   output$issuename <- renderText({
-    
     req(input$i)
     
     if (input$i != "None"){
@@ -716,8 +666,28 @@ server <- function(input, output, session) {
   
   # Count of records ----
   output$no_records <- renderUI({
-    
     req(input$i)
+    
+    #summary_vals ---- 
+    summary_vals <- data.frame(matrix(ncol = 2, nrow = 0, data = NA))
+    
+    for (i in 1:length(distinct_issues)){
+      this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM issues WHERE issue = '", distinct_issues[i], "'"))
+      summary_vals <- rbind(summary_vals, cbind(distinct_issues[i], as.numeric(this_issue[1])))
+    }
+    
+    #no issues
+    this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM issues WHERE issue = ''"))
+    summary_vals <- rbind(summary_vals, cbind("None", as.numeric(this_issue[1])))
+    
+    names(summary_vals) <- c("issue", "no_records")
+    summary_vals$no_records <- as.numeric(paste(summary_vals$no_records))
+    
+    #Sort by no of cases
+    summary_vals <- summary_vals[order(-summary_vals$no_records),]
+    summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(summary_vals$no_records)])
+    
+    summary_vals <<- summary_vals
     
     if (input$i != "None"){
       this_count <- summary_vals[summary_vals$issue == input$i,]$no_records
@@ -736,7 +706,6 @@ server <- function(input, output, session) {
   
   # Print issue description ----
   output$issuedescript <- renderText({
-    
     req(input$i)
     
     if (input$i != "None"){
@@ -867,8 +836,6 @@ server <- function(input, output, session) {
           <p>Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool.
          </div></div>")
   })
-  
-  
 }
 
 
@@ -879,13 +846,9 @@ shinyApp(ui = ui, server = server, onStart = function() {
   onStop(function() {
     dbDisconnect(gbif_db)
     if (persistent_db == FALSE){
-      dbDisconnect(gbif_db)
-      Sys.sleep(1)
       try(unlink("data", recursive = TRUE), silent = TRUE)
     }
     cat("Removing objects\n")
     rm(list = ls())
   })
 })
-
-
