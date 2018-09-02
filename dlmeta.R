@@ -26,5 +26,21 @@ output$download_doi <- renderText({
   html_to_print <- paste0(html_to_print, "</dl>")
   html_to_print <- paste0(html_to_print, "<p><a href=\"", metadata_json, "\" target = _blank>Metadata JSON</a>")
   html_to_print <- paste0(html_to_print, "</div></div></div>")
+
+  #Messages ----
+  output$messages <- renderUI({
+    metadata_json <- jsonlite::fromJSON(metadata_json)
+    no_datasets <- prettyNum(metadata_json$numberDatasets, big.mark = ",", scientific=FALSE)
+    
+    if (metadata_json$numberDatasets > 1){
+      datasets_text <- "datasets"
+    }else{
+      datasets_text <- "dataset"
+    }
+    
+    HTML(paste0("<p class=\"alert alert-success\" role=\"alert\">Loaded download ", metadata_json$key, " (doi: ", metadata_json$doi, ") with ", no_datasets," ", datasets_text, " and ", prettyNum(metadata_json$totalRecords, big.mark = ",", scientific=FALSE), " occurrence records.</p>"))
+  })
+  
   HTML(html_to_print)
 })
+

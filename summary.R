@@ -41,9 +41,9 @@ output$summaryPlot <- renderPlot({
           plot.title = element_text(size = 18, face="bold")
     ) + 
     labs(
-        title = "Number of records by issue", 
+        title = "Number of Records by Issue", 
         x = "Issue", 
-        y = "No. of records"
+        y = "No. of Records"
         )
 })
 
@@ -69,10 +69,10 @@ output$summaryPlot2 <- renderPlot({
           ) + 
     geom_text(aes(label = paste(percent, "%"), size = 10), position=position_dodge(width = 0.9), vjust = -0.5) +
     labs(
-        title = "Number of issues per record", 
+        title = "Number of Issues by Record", 
         subtitle = "Percent is from total no. of rows", 
-        x = "No. of issues/record", 
-        y = "No. of records"
+        x = "No. of Issues/Record", 
+        y = "No. of Records"
         )
 })
 
@@ -97,9 +97,8 @@ output$summaryPlot3 <- renderPlot({
     scale_y_discrete(limits = levels(issues_summ$issue_b)) + 
     scale_fill_gradient(low = "yellow", high = "red") + 
     labs(
-        fill = "No. of records\nwith both\nissues", 
-        title = "Related Issues"
+        fill = "No. of Records\nwith both\nIssues", 
+        title = "Issues Sharing Records"
         )
-  
-  
+
 })

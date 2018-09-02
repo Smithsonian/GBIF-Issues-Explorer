@@ -1,7 +1,10 @@
 # Persistent database? ----
 # TRUE: Keep the database once built, or
 # FALSE: destroy at the end of each session
-persistent_db <- TRUE
+persistent_db <- FALSE
+
+# Maximum download size, in bytes.
+max_dl_size <- 2600000
 
 # No need to edit anything below this line
 
@@ -46,33 +49,39 @@ no_rows <- 20000
 
 
 
-
 # UI ----
 ui <- fluidPage(
   navbarPage(app_name,
      # Tab:Summary ----
       tabPanel("Summary", 
         br(),
-        uiOutput("ask_key"),
+        fluidRow(
+          column(width = 4,
+                 uiOutput("ask_key")
+          ),
+          column(width = 6,
+                 uiOutput("messages")
+          )
+        ),
         fluidRow(
           column(width = 6,
                  br(),
-                 withSpinner(uiOutput("download_doi"))
+                 uiOutput("download_doi")
           ),
           column(width = 6,
                  br(),
-                 withSpinner(plotOutput("summaryPlot", height = 600))
+                 plotOutput("summaryPlot", height = 600)
                  )
         ),
         
         fluidRow(
           column(width = 6,
                  br(),
-                 withSpinner(plotOutput("summaryPlot3", height = 600))
+                 plotOutput("summaryPlot3", height = 600)
                  ),
           column(width = 6,
                  br(),
-                 withSpinner(plotOutput("summaryPlot2", height = 600))
+                 plotOutput("summaryPlot2", height = 600)
                  )
         )
         ),
@@ -165,6 +174,7 @@ server <- function(input, output, session) {
     database_file <- paste0("data/gbif_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".sqlite3")
   }
   
+  print(database_file)
   
   # ask for key ----
   output$ask_key <- renderUI({
@@ -182,18 +192,24 @@ server <- function(input, output, session) {
   
   # Submit button ----
   observeEvent(input$submitkey, {
-    cat(input$gbif_key)
+    print(input$gbif_key)
     
     progress0 <- shiny::Progress$new()
     progress0$set(message = "Downloading file", value = 0.1)
     on.exit(progress0$close())
     
+    # Downloading GBIF file ---- 
+    #add progress by using https://stackoverflow.com/a/42632792?
     gbif_check <- check_gbif(input$gbif_key)
     if (class(gbif_check) == "list"){
       dl_size <- gbif_check$size
       dl_size_human <- hsize(dl_size)
+      print(dl_size_human)
     }else{
-      cat("Could not find key")
+      #Messages ----
+      output$messages <- renderUI({
+        HTML(paste0("<p class=\"alert alert-danger\" role=\"alert\">Error: Could not find a download with that key</p>"))
+      })
       req(FALSE)
     }
     
@@ -203,7 +219,11 @@ server <- function(input, output, session) {
     if (class(gbif_metadata) == "list"){
       gbif_metadata <<- gbif_metadata
     }else{
-      stop("Could not download file")
+      #Messages ----
+      output$messages <- renderUI({
+        HTML(paste0("<p class=\"alert alert-danger\" role=\"alert\">Error: Could not download the file.</p>"))
+      })
+      req(FALSE)
     }
     
     progress0$set(message = "Downloading file", value = 1)
@@ -293,6 +313,7 @@ server <- function(input, output, session) {
         progress2$close()
         
         progress1$set(value = 1, message = "Done reading occurrence records")
+        progress1$close()
         
         progress$set(message = "Loading data", value = 0.4)
         
@@ -330,10 +351,8 @@ server <- function(input, output, session) {
             progress3$set(value = progress_val, message = "Loading multimedia records", detail = long_loading_msg)
             progress_val <- progress_val + progress_steps
           }
-          
           rm(gbif_data)
         }
-        
         
         progress3$set(value = 1, message = "Done reading multimedia records")
         progress3$close()
@@ -357,7 +376,7 @@ server <- function(input, output, session) {
           }
         }
         
-        distinct_issues <- unique(unlist(issues_list))
+        distinct_issues <<- unique(unlist(issues_list))
 
         #summary 
         for (i in 1:length(distinct_issues)){
@@ -445,7 +464,7 @@ server <- function(input, output, session) {
     
     # Get rows with issues
     distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
-    distinct_issues <- unlist(distinct_issues, use.names = FALSE)
+    distinct_issues <<- unlist(distinct_issues, use.names = FALSE)
     
     #distinct_issues pulldown ----
     output$distinct_issues <- renderUI({
@@ -482,11 +501,11 @@ server <- function(input, output, session) {
     
     if (input$i == "None"){
       query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
-      cat(query)
+      print(query)
       datarows <- dbGetQuery(gbif_db, query)
     }else{
       query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
-      cat(query)
+      print(query)
       datarows <- dbGetQuery(gbif_db, query)
     }
     df <- data.frame(datarows, stringsAsFactors = FALSE)
@@ -806,6 +825,7 @@ server <- function(input, output, session) {
       HTML("</div></div>")
     )
   })
+  
   
   
   
