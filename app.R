@@ -1,10 +1,10 @@
 # Persistent database? ----
 # TRUE: Keep the database once built, or
 # FALSE: destroy at the end of each session
-persistent_db <- TRUE
+persistent_db <- FALSE
 
 # Maximum download size, in bytes.
-max_dl_size <- 80000000
+max_dl_size <- 50000000
 
 # No need to edit anything below this line
 
@@ -14,9 +14,9 @@ max_dl_size <- 80000000
 
 # Load/install packages ----
 #from https://stackoverflow.com/a/4090208
-list.of.packages <- c("shiny", "DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "data.table", "RSQLite", "jsonlite", "R.utils", "shinyWidgets", "shinycssloaders")
+list.of.packages <- c("shiny", "DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "curl", "data.table", "RSQLite", "jsonlite", "R.utils", "shinyWidgets", "shinycssloaders")
 
-#Comment the installation lines for deployment in shinyapps.io
+# Comment the installation lines for deployment in shinyapps.io
 # http://docs.rstudio.com/shinyapps.io/getting-started.html#using-your-r-packages-in-the-cloud
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)){
@@ -26,6 +26,22 @@ if(length(new.packages)){
 for (package in list.of.packages){
   library(package, character.only = TRUE)
 }
+
+#Shinyapps.io demo ----
+# library(shiny)
+# library(DT)
+# library(dplyr)
+# library(ggplot2)
+# library(stringr)
+# library(leaflet)
+# library(XML)
+# library(data.table)
+# library(RSQLite)
+# library(jsonlite)
+# library(R.utils)
+# library(shinyWidgets)
+# library(shinycssloaders)
+# library(curl)
 
 
 
@@ -185,7 +201,10 @@ server <- function(input, output, session) {
     if (!file.exists(database_file)){
         tagList(
           h3("Explore the issues that GBIF has identified in the data in a DwC download."),
-          textInput("gbif_key", "GBIF Download Key:"),
+          #Shinyapps.io demo ----
+          #p("This example deployment has a download key already entered in the field below. Just click 'Submit' to start the process."),
+          #textInput(inputId = "gbif_key", label = "GBIF Download Key:", value = "0004867-180824113759888"),
+          textInput(inputId = "gbif_key", label = "GBIF Download Key:"),
           actionButton("submitkey", 
                        label = "Submit", 
                        class = "btn btn-primary",
@@ -209,6 +228,8 @@ server <- function(input, output, session) {
     }else{
       #Messages ----
       output$messages <- renderUI({
+        res <- try(jsonlite::fromJSON(paste0("http://api.gbif.org/v1/occurrence/download/", input$gbif_key)), silent = TRUE)
+        cat(res)
         HTML(paste0("<p class=\"alert alert-danger\" role=\"alert\">Error: Could not find a download with that key</p>"))
       })
       req(FALSE)
@@ -491,11 +512,9 @@ server <- function(input, output, session) {
   # Table of records with issue ----
   datarows <- reactive({
     req(input$i)
-    
+    cat(input$i)
     #Which cols to display by type of issue
-    if (input$i == "None"){
-      cols <- "gbifID, scientificName, decimalLatitude, decimalLongitude, locality, country"
-    }else if (input$i %in% spatial_issues){
+    if (input$i %in% spatial_issues){
       cols <- "gbifID, scientificName, decimalLatitude, decimalLongitude, locality, country"
     }else if (input$i %in% depth_issues){
       cols <- "gbifID, scientificName, minimumDepthInMeters, maximumDepthInMeters, verbatimDepth"
@@ -507,15 +526,10 @@ server <- function(input, output, session) {
       cols <- "gbifID, scientificName, recordedBy, locality, country"
     }
     
-    if (input$i == "None"){
-      query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
-      print(query)
-      datarows <- dbGetQuery(gbif_db, query)
-    }else{
-      query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
-      print(query)
-      datarows <- dbGetQuery(gbif_db, query)
-    }
+    query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
+    print(query)
+    datarows <- dbGetQuery(gbif_db, query)
+
     df <- data.frame(datarows, stringsAsFactors = FALSE)
     
     df
@@ -523,7 +537,7 @@ server <- function(input, output, session) {
 
   output$table <- DT::renderDataTable({
     req(input$i)
-    DT::datatable(datarows(), escape = FALSE, options = list(searching = FALSE, ordering = FALSE, pageLength = 10), rownames = FALSE, selection = 'single', isolate({
+    DT::datatable(datarows(), escape = FALSE, options = list(searching = TRUE, ordering = TRUE, pageLength = 10), rownames = FALSE, selection = 'single', isolate({
       datarows()
     }))
   }, server = TRUE)
@@ -558,7 +572,7 @@ server <- function(input, output, session) {
         )
                             
     html_to_print <- paste0(html_to_print, "</h4><dl class=\"dl-horizontal\"><dt>GBIF Record</dt><dd><a href=\"", gbif_record_url, "\" target = _blank>", gbif_record_url, "</a></dd>")
-    if (occurrenceID != ""){
+    if (!is.na(occurrenceID)){
       html_to_print <- paste0(html_to_print, "<dt>Occurrence ID</dt>")
       #check if it is a URL, just print otherwise
       if (substr(occurrenceID, 0, 4) == "http"){
@@ -821,6 +835,16 @@ server <- function(input, output, session) {
           <p>This tool works only with Darwin Core Archives, not with CSV archives.</p>
          </div></div>")
   })
+  
+  session$onSessionEnded(function() {
+    dbDisconnect(gbif_db)
+    if (persistent_db == FALSE){
+      try(unlink("data", recursive = TRUE), silent = TRUE)
+    }
+    cat("Removing objects\n")
+    rm(list = ls())
+  })
+  
 }
 
 

@@ -98,8 +98,8 @@ elev_issues <- c("ELEVATION_MIN_MAX_SWAPPED",
 #issues dealing with dates ----
 date_issues <- c("RECORDED_DATE_INVALID",
                  "RECORDED_DATE_MISMATCH",
-                 "RECORDED_DATE_UNLIKELY,
-                  IDENTIFIED_DATE_UNLIKELY")
+                 "RECORDED_DATE_UNLIKELY",
+                  "IDENTIFIED_DATE_UNLIKELY")
 
 
 
@@ -160,6 +160,7 @@ download_gbif <- function(gbif_key, export_dir){
       #extract to data/
       unzip(zipfile = paste0(gbif_key, ".zip"), exdir = export_dir)
       file.remove(paste0(gbif_key, ".zip"))
+      res <- jsonlite::fromJSON(paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key))
       return(res)
     }
 }

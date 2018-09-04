@@ -29,6 +29,7 @@ The app requires these packages:
  * stringr
  * leaflet
  * XML
+ * curl
  * data.table
  * RSQLite
  * jsonlite
@@ -42,7 +43,7 @@ To install:
 install.packages(
     c("shiny", "DT", "dplyr", 
       "ggplot2", "stringr", "leaflet", 
-      "XML", "data.table", "RSQLite", 
+      "XML", "curl", "data.table", "RSQLite", 
       "jsonlite", "R.utils", "shinyWidgets", 
       "shinycssloaders")
     )
