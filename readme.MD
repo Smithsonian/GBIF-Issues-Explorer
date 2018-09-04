@@ -20,7 +20,7 @@ To use, just provide the key to a Darwin Core Archive from GBIF. The download ke
 
 Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool.
 
-The app requires these packages:
+The app requires R 3.3, or later, and these packages:
 
  * shiny
  * DT
@@ -48,6 +48,8 @@ install.packages(
       "shinycssloaders")
     )
 ```
+
+Please note that some of these packages may take some time to install due to a number of dependencies. Future improvements will try to reduce these dependencies to a minimum. 
 
 The first time the app is run, it takes some time to create a database, in particular for large data files. Afterwards, it uses the database, so it will be faster. 
 
