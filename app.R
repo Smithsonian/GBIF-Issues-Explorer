@@ -131,12 +131,12 @@ ui <- fluidPage(
                ),
                column(width=5, 
                       conditionalPanel("input.table_rows_selected != null && input.table_rows_selected != ''",
-                        withSpinner(shinyWidgets::panel(
+                        shinyWidgets::panel(
                               heading = "Record detail",
                               status = "primary",
                               uiOutput("recorddetail"),
                               leafletOutput("mymap")
-                           ))
+                           )
                       )
                )
           )
@@ -795,7 +795,9 @@ server <- function(input, output, session) {
   # Help1 ----
   output$help1 <- renderUI({
     HTML("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">How to use this tool</h3></div><div class=\"panel-body\">
-         <p>This tool allows collection and data managers, as well as researchers, to explore issues in GBIF Darwin Core Archive downloads. Just enter a GBIF download key and the tool will download the zip file, create a local database, and display the issues in the data contained. Once provided with the GBIF key, this tool will:
+         <p>Occurrence records in GBIF can be tagged with a number of issues that their system has detected. However, like the <a href=\"https://www.gbif.org/infrastructure/processing\" target = _blank>processing information page</a> indicates:</p>
+         <pre>Not all issues indicate bad data. Some are merley flagging the fact that GBIF has altered values during processing.</pre>
+         <p>This tool allows collection and data managers, as well as researchers, to explore issues in GBIF Darwin Core Archive downloads in an easy web-based interface. Just enter a GBIF download key and the tool will download the zip file, create a local database, and display the issues in the data contained. Once provided with the GBIF key, this tool will:
          <ul>
          <li>Download the zip archive</li>
          <li>Extract the files</li>
@@ -804,7 +806,7 @@ server <- function(input, output, session) {
          <li>Generate summary statistics of the issues</li>
          </ul>
          <p>Then, you can click on the 'Explore' tab to see how many records have been tagged with a particular issue.
-         <p>Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown. You can choose to delete the row from the local database. 
+         <p>Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown, including a map if the records has coordinates. You can choose to delete the row from the local database. 
          <p>After deleting records, you can download the verbatim and/or occurrence files without these records.
          </div></div>")
   })
