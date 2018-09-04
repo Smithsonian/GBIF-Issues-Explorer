@@ -1,10 +1,10 @@
 # Persistent database? ----
 # TRUE: Keep the database once built, or
 # FALSE: destroy at the end of each session
-persistent_db <- FALSE
+persistent_db <- TRUE
 
 # Maximum download size, in bytes.
-max_dl_size <- 2600000
+max_dl_size <- 80000000
 
 # No need to edit anything below this line
 
@@ -15,6 +15,9 @@ max_dl_size <- 2600000
 # Load/install packages ----
 #from https://stackoverflow.com/a/4090208
 list.of.packages <- c("shiny", "DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "data.table", "RSQLite", "jsonlite", "R.utils", "shinyWidgets", "shinycssloaders")
+
+#Comment the installation lines for deployment in shinyapps.io
+# http://docs.rstudio.com/shinyapps.io/getting-started.html#using-your-r-packages-in-the-cloud
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)){
   install.packages(new.packages)
@@ -34,9 +37,8 @@ source("functions.R")
 
 # Settings ----
 app_name <- "GBIF Issues Explorer"
-app_ver <- "0.2"
+app_ver <- "0.3"
 github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
-
 
 occ_file <- "data/occurrence.txt"
 ver_file <- "data/verbatim.txt"
@@ -53,10 +55,10 @@ no_rows <- 20000
 ui <- fluidPage(
   navbarPage(app_name,
      # Tab:Summary ----
-      tabPanel("Summary", 
+     tabPanel("Summary", 
         br(),
         fluidRow(
-          column(width = 4,
+          column(width = 6,
                  uiOutput("ask_key")
           ),
           column(width = 6,
@@ -73,7 +75,6 @@ ui <- fluidPage(
                  plotOutput("summaryPlot", height = 600)
                  )
         ),
-        
         fluidRow(
           column(width = 6,
                  br(),
@@ -96,10 +97,10 @@ ui <- fluidPage(
                       uiOutput("downloadData"),
                       HTML('<script type="text/javascript">
                            $(document).ready(function() {
-                           $("#downloadData").click(function() {
-                           $("#downloadData2").text("Loading data, please wait...").attr(\'disabled\',\'disabled\');
-                           });
-                           });
+                             $("#downloadData").click(function() {
+                               $("#downloadData2").text("Loading data, please wait...").attr(\'disabled\',\'disabled\');
+                               });
+                             });
                            </script>
                            ')
                            ),
@@ -110,33 +111,32 @@ ui <- fluidPage(
                column(width = 4,
                       br(),
                       uiOutput("downloadVerFileInfo")
-                      
                     )
                 ),
                hr(), 
                fluidRow(column(width=7,
-                     fluidRow(column(width=8,                
+                     fluidRow(
+                       column(width=8,                
                            HTML("<dl><dt>"),
                            strong(textOutput("issuename")),
                            HTML("</dt><dd>"),
                            textOutput("issuedescript"),
                            HTML("</dd></dl>")
                      ),
-                     column(width=4,
-                            uiOutput("no_records")
-                     )
+                      column(width=4,
+                            HTML("<p class=\"pull-right\">Click a record for details</p>")
+                        )
                      ),
                      withSpinner(DT::dataTableOutput("table"))
                ),
-               
                column(width=5, 
                       conditionalPanel("input.table_rows_selected != null && input.table_rows_selected != ''",
-                           shinyWidgets::panel(
-                             heading = "Record detail",
-                             status = "primary",
-                             uiOutput("recorddetail"),
+                        withSpinner(shinyWidgets::panel(
+                              heading = "Record detail",
+                              status = "primary",
+                              uiOutput("recorddetail"),
                               leafletOutput("mymap")
-                           )
+                           ))
                       )
                )
           )
@@ -155,7 +155,7 @@ ui <- fluidPage(
       )
   ),
   hr(),
-  HTML(paste0("<p><a href=\"http://dpo.si.edu\" target = _blank><img src=\"circlelogo.png\"> Digitization Program Office</a> | ", app_name, " ver. ", app_ver, " | <a href=\"", github_link, "\" target = _blank>Source code</a></p>"))
+  HTML(paste0("<p><a href=\"http://dpo.si.edu\" target = _blank title = \"Digitization Program Office of the Smithsonian Institution\"><img src=\"circlelogo.png\"> Digitization Program Office</a> | ", app_name, " ver. ", app_ver, " | <a href=\"", github_link, "\" target = _blank>Source code</a></p>"))
 )
 
 
@@ -167,6 +167,10 @@ server <- function(input, output, session) {
   
   #rm("registerShinyDebugHook", envir = as.environment("tools:rstudio"))
   dir.create("data", showWarnings = FALSE)
+  
+  if (!exists("persistent_db")){
+    persistent_db <- FALSE
+  }
   
   if (persistent_db){
     database_file <- "data/gbif.sqlite3"
@@ -180,7 +184,8 @@ server <- function(input, output, session) {
   output$ask_key <- renderUI({
     if (!file.exists(database_file)){
         tagList(
-          textInput("gbif_key", "Enter a GBIF download Key"),
+          h3("Explore the issues that GBIF has identified in the data in a DwC download."),
+          textInput("gbif_key", "GBIF Download Key:"),
           actionButton("submitkey", 
                        label = "Submit", 
                        class = "btn btn-primary",
@@ -193,10 +198,6 @@ server <- function(input, output, session) {
   # Submit button ----
   observeEvent(input$submitkey, {
     print(input$gbif_key)
-    
-    progress0 <- shiny::Progress$new()
-    progress0$set(message = "Downloading file", value = 0.1)
-    on.exit(progress0$close())
     
     # Downloading GBIF file ---- 
     #add progress by using https://stackoverflow.com/a/42632792?
@@ -213,7 +214,19 @@ server <- function(input, output, session) {
       req(FALSE)
     }
     
+    
+    #Check if DwC ----
+    if (!check_gbif_dw(input$gbif_key)){
+      #Messages ----
+      output$messages <- renderUI({
+        HTML(paste0("<p class=\"alert alert-danger\" role=\"alert\">Error: Download is not Darwin Core Archive.</p>"))
+      })
+      req(FALSE)
+    }
+    
+    progress0 <- shiny::Progress$new()
     progress0$set(message = paste0("Downloading file of size: ", dl_size_human, ". Please wait."), value = 0.1)
+    on.exit(progress0$close())
     
     gbif_metadata <- download_gbif(input$gbif_key, "data")
     if (class(gbif_metadata) == "list"){
@@ -232,7 +245,7 @@ server <- function(input, output, session) {
     if (file.exists("data/occurrence.txt")){
       # Create a Progress object
       progress <- shiny::Progress$new()
-      progress$set(message = "Loading data", value = 0.05)
+      progress$set(message = "Loading data", value = 0.1)
       on.exit(progress$close())
       
       # No db, occ file ----
@@ -250,10 +263,6 @@ server <- function(input, output, session) {
         progress2$set(message = "Loading verbatim table", value = 0.05)
         on.exit(progress2$close())
         
-        progress3 <- shiny::Progress$new()
-        progress3$set(message = "Loading multimedia table", value = 0.05)
-        on.exit(progress3$close())
-        
         db_created <- try(create_database(database_file, "data/dataset/"))
         
         if (class(db_created) == "try-error"){
@@ -262,12 +271,11 @@ server <- function(input, output, session) {
         
         gbif_db <<- dbConnect(RSQLite::SQLite(), database_file)
         
-        progress1$set(value = 1, message = "Creating database")
+        progress0$set(value = 1, message = "Creating database")
         progress0$close()
         
         progress1$set(value = 0.1, message = "Reading occurrence records", detail = long_loading_msg)
         progress2$set(value = 0.1, message = "Reading verbatim records", detail = long_loading_msg)
-        progress3$set(value = 0.1, message = "Reading multimedia records", detail = long_loading_msg)
         
         #how big?
         no_lines <- R.utils::countLines(occ_file)[1]
@@ -311,7 +319,6 @@ server <- function(input, output, session) {
         
         progress2$set(value = 1, message = "Done reading verbatim records")
         progress2$close()
-        
         progress1$set(value = 1, message = "Done reading occurrence records")
         progress1$close()
         
@@ -320,6 +327,10 @@ server <- function(input, output, session) {
         
         
         #multimedia file ----
+        progress3 <- shiny::Progress$new()
+        on.exit(progress3$close())
+        progress3$set(value = 0.1, message = "Reading multimedia records", detail = long_loading_msg)
+        
         no_lines <- R.utils::countLines(multi_file)[1]
         
         if (no_lines > 1){
@@ -357,14 +368,14 @@ server <- function(input, output, session) {
         progress3$set(value = 1, message = "Done reading multimedia records")
         progress3$close()
         
-        progress$set(message = "Loading data", value = 0.6)
+        progress$set(message = "Loading data", value = 0.7)
         
         
         
         
         
         # Statistics of issues ----
-        progress$set(value = 0.7, message = "Generating statistics")
+        progress$set(value = 0.8, message = "Generating statistics")
         
         issue_list <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM gbif WHERE issue != ''")
         
@@ -383,28 +394,26 @@ server <- function(input, output, session) {
           dbExecute(gbif_db, paste0("INSERT INTO issues (gbifID, issue) SELECT gbifID, '", distinct_issues[i], "' FROM gbif WHERE issue LIKE '%", distinct_issues[i], "%'"))
         }
         
-        progress$set(message = "Loading data", value = 0.9)
+        progress$set(message = "Loading data", value = 0.95)
         
-        #Delete tables
+        #Delete files no longer needed
         try(unlink("data/dataset", recursive = TRUE), silent = TRUE)
-        #try(unlink("data/*.txt", recursive = TRUE), silent = TRUE)
-        #try(unlink("data/*.xml", recursive = TRUE), silent = TRUE)
+        try(unlink("data/*.txt", recursive = TRUE), silent = TRUE)
+        try(unlink("data/meta.xml", recursive = TRUE), silent = TRUE)
         
         progress$set(message = "Done loading data... Loading app.", value = 1.0)
         progress$close()
         
         # Close db ----
         dbDisconnect(gbif_db)
+        rm(gbif_db)
       }
-      
       
       # Open database ----
       gbif_db <<- dbConnect(RSQLite::SQLite(), database_file)
       
-      
       # Metadata of Download ----
       eval(parse("dlmeta.R"))
-      
       
       # Get rows with issues ----
       distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
@@ -424,7 +433,6 @@ server <- function(input, output, session) {
       
       names(summary_vals) <- c("issue", "no_records")
       summary_vals$no_records <- as.numeric(paste(summary_vals$no_records))
-      
       
       #Sort by no of cases
       summary_vals <- summary_vals[order(-summary_vals$no_records),]
@@ -470,7 +478,7 @@ server <- function(input, output, session) {
     output$distinct_issues <- renderUI({
       selectInput(inputId = "i",
                   label = "Select an issue:", 
-                  choices = distinct_issues,
+                  choices = c(distinct_issues),
                   width = 360
       )
     })
@@ -520,26 +528,6 @@ server <- function(input, output, session) {
     }))
   }, server = TRUE)
   
-  
-  
-  
-  
-  
-  # Record map ----
-  output$mymap <- renderLeaflet({
-    req(input$i)
-      datarows <- dbGetQuery(gbif_db, paste0("SELECT gbifID, decimalLatitude, decimalLongitude FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and ignorerow = 0"))
-      points <- datarows[input$table_rows_selected,]
-      
-      #check if lat and lon exist
-      req(points$decimalLongitude)
-      req(points$decimalLatitude)
-      
-      leaflet() %>%
-        addProviderTiles(providers$Esri.NatGeoWorldMap) %>%
-        addMarkers(lng = points$decimalLongitude, lat = points$decimalLatitude) %>%
-        setView(points$decimalLongitude, points$decimalLatitude, zoom = 04)
-  })
   
   
   
@@ -669,57 +657,31 @@ server <- function(input, output, session) {
   
   
   
+  # Record map ----
+  output$mymap <- renderLeaflet({
+    req(input$i)
+    datarows <- dbGetQuery(gbif_db, paste0("SELECT gbifID, decimalLatitude, decimalLongitude FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and ignorerow = 0"))
+    points <- datarows[input$table_rows_selected,]
+    
+    #check if lat and lon exist
+    req(points$decimalLongitude)
+    req(points$decimalLatitude)
+    
+    leaflet() %>%
+      addProviderTiles(providers$Esri.NatGeoWorldMap) %>%
+      addMarkers(lng = points$decimalLongitude, lat = points$decimalLatitude) %>%
+      setView(points$decimalLongitude, points$decimalLatitude, zoom = 04)
+  })
+  
+  
+  
+  
   
   # Name of issue ----
   output$issuename <- renderText({
     req(input$i)
-    
-    if (input$i != "None"){
-      this_issue <- dplyr::filter(gbifissues, issue == input$i)
-      paste0("Issue: ", this_issue$issue)
-    }else{
-      print("Records with no issues")
-    }
-  })
-  
-  
-  # Count of records ----
-  output$no_records <- renderUI({
-    req(input$i)
-    
-    #summary_vals ---- 
-    summary_vals <- data.frame(matrix(ncol = 2, nrow = 0, data = NA))
-    
-    for (i in 1:length(distinct_issues)){
-      this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM issues WHERE issue = '", distinct_issues[i], "'"))
-      summary_vals <- rbind(summary_vals, cbind(distinct_issues[i], as.numeric(this_issue[1])))
-    }
-    
-    #no issues
-    this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM issues WHERE issue = ''"))
-    summary_vals <- rbind(summary_vals, cbind("None", as.numeric(this_issue[1])))
-    
-    names(summary_vals) <- c("issue", "no_records")
-    summary_vals$no_records <- as.numeric(paste(summary_vals$no_records))
-    
-    #Sort by no of cases
-    summary_vals <- summary_vals[order(-summary_vals$no_records),]
-    summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(summary_vals$no_records)])
-    
-    summary_vals <<- summary_vals
-    
-    if (input$i != "None"){
-      this_count <- summary_vals[summary_vals$issue == input$i,]$no_records
-    }else{
-      this_count <- dbGetQuery(gbif_db, "SELECT count(gbifID) FROM gbif WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues)  and ignorerow = 0")
-    }
-    if (this_count > 0){
-      this_count_pretty <- prettyNum(this_count, big.mark = ",", scientific=FALSE)
-      #HTML(paste0("<p><strong>", this_count_pretty , " records</strong><br>Click for details</p>"))
-      HTML(paste0("<p class=\"pull-right\">Click a record for details</p>"))
-    }else{
-      HTML(paste0("<p class=\"pull-right\"><strong>No records found</strong></p>"))
-    }
+    this_issue <- dplyr::filter(gbifissues, issue == input$i)
+    paste0("Issue: ", this_issue$issue)
   })
   
   
@@ -729,7 +691,7 @@ server <- function(input, output, session) {
     
     if (input$i != "None"){
       this_issue <- dplyr::filter(gbifissues, issue == input$i)
-      this_issue$description
+      paste0("Description: ", this_issue$description)
     }
   })
 
@@ -800,7 +762,7 @@ server <- function(input, output, session) {
   
   
   
-  # Download Occ file ----
+  # Download Verbatim file ----
   output$downloadOcc1 <- downloadHandler(
     filename = function() {
       paste("verbatim.csv", sep = "")
@@ -833,7 +795,7 @@ server <- function(input, output, session) {
   # Help1 ----
   output$help1 <- renderUI({
     HTML("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">How to use this tool</h3></div><div class=\"panel-body\">
-         <p>This system will take a key for a GBIF download and display the issues in the data contained. Once provided with the GBIF key, this tool will:
+         <p>This tool allows collection and data managers, as well as researchers, to explore issues in GBIF Darwin Core Archive downloads. Just enter a GBIF download key and the tool will download the zip file, create a local database, and display the issues in the data contained. Once provided with the GBIF key, this tool will:
          <ul>
          <li>Download the zip archive</li>
          <li>Extract the files</li>
@@ -843,7 +805,7 @@ server <- function(input, output, session) {
          </ul>
          <p>Then, you can click on the 'Explore' tab to see how many records have been tagged with a particular issue.
          <p>Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown. You can choose to delete the row from the local database. 
-         <p>After deleting records, you can download the verbatim and/or occurrence files without these deleted records.
+         <p>After deleting records, you can download the verbatim and/or occurrence files without these records.
          </div></div>")
   })
   
@@ -851,9 +813,10 @@ server <- function(input, output, session) {
   output$help2 <- renderUI({
     HTML("
          <div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Download Key</h3></div><div class=\"panel-body\">
-        <p>The key is obtained when requesting a download of occurrence data from GBIF. It can be requested via their API or on the website. If your download URL is:
+        <p>The key is obtained when requesting a download of occurrence data from GBIF. It can be requested via their API or on the website. If your download URL is:</p>
           <pre>https://www.gbif.org/occurrence/download/0001419-180824113759888</pre>
-          <p>Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool.
+          <p>Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool.</p>
+          <p>This tool works only with Darwin Core Archives, not with CSV archives.</p>
          </div></div>")
   })
 }

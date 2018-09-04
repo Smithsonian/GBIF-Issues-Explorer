@@ -1,12 +1,9 @@
-
 # Metadata of Download ----
 dl_meta_file <- XML::xmlToList("data/metadata.xml")
 output$download_doi <- renderText({
   this_doi <- dl_meta_file$additionalMetadata$metadata$`gbif`$citation$.attrs
   gbif_key <- dl_meta_file$dataset$alternateIdentifier
-  
   metadata_json <- paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key)
-  
   gbif_metadata <- unlist(jsonlite::fromJSON(metadata_json))
   
   html_to_print <- paste0("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Occurrence Download Metadata</h3></div><div class=\"panel-body\"><div style = \"overflow-y: auto; overflow-x: auto;\"><dl class=\"dl-horizontal\">")
@@ -20,15 +17,45 @@ output$download_doi <- renderText({
     }else{
       html_to_print <- paste0(html_to_print, "<dd>", gbif_metadata[i], "</dd>")
     }
-    
   }
   
   html_to_print <- paste0(html_to_print, "</dl>")
-  html_to_print <- paste0(html_to_print, "<p><a href=\"", metadata_json, "\" target = _blank>Metadata JSON</a>")
+  #html_to_print <- paste0(html_to_print, "<p><a href=\"", metadata_json, "\" target = _blank>Metadata in JSON</a>")
+  
+  # collapsed_json <- paste0("
+  # <a href=\"#demo\" class=\"btn btn-info\" data-toggle=\"collapse\">Metadata in JSON</a>
+  #   <div id=\"demo\" class=\"collapse\">", pre(jsonlite::prettify(jsonlite::toJSON(jsonlite::fromJSON(metadata_json)))))
+  # 
+  # html_to_print <- paste0(html_to_print, collapsed_json, "</div>")
+  
+  
+  
+  html_to_print <- paste0(html_to_print, "<button type=\"button\" class=\"btn btn-info\" data-toggle=\"modal\" data-target=\"#myModal\">Metadata JSON</button>
+    <!-- Modal -->
+    <div class=\"modal fade\" id=\"myModal\" role=\"dialog\">
+      <div class=\"modal-dialog\">
+        <!-- Modal content-->
+        <div class=\"modal-content\">
+          <div class=\"modal-header\">
+            <button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+              <h4 class=\"modal-title\">Archive Metadata</h4>
+                </div>
+                <div class=\"modal-body\">
+                  ", pre(jsonlite::prettify(jsonlite::toJSON(jsonlite::fromJSON(metadata_json)))), "
+                  </div>
+                <div class=\"modal-footer\">
+                  <button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\">Close</button>
+                </div>
+              </div>
+          </div>
+          </div>")
+  
+  
   html_to_print <- paste0(html_to_print, "</div></div></div>")
 
   #Messages ----
   output$messages <- renderUI({
+    req(input$gbif_key)
     metadata_json <- jsonlite::fromJSON(metadata_json)
     no_datasets <- prettyNum(metadata_json$numberDatasets, big.mark = ",", scientific=FALSE)
     
@@ -43,4 +70,3 @@ output$download_doi <- renderText({
   
   HTML(html_to_print)
 })
-

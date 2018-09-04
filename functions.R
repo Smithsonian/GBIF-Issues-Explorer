@@ -127,7 +127,7 @@ create_issuetable_query <- 'CREATE TABLE issues(ID INTEGER PRIMARY KEY, gbifID I
 long_loading_msg <- "(this may take a while depending on the size of the download)"
 
 
-# Check gbif key
+# Check gbif key ----
 check_gbif <- function(gbif_key){
   res <- try(jsonlite::fromJSON(paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key)), silent = TRUE)
   if (class(res) == "try-error"){
@@ -139,13 +139,20 @@ check_gbif <- function(gbif_key){
 
 
 
+# Check if gbif key if DwC ----
+check_gbif_dw <- function(gbif_key){
+  res <- jsonlite::fromJSON(paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key))
+  if (res$request$format == "DWCA"){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+}
+
+
+
 # Download from GBIF ----
 download_gbif <- function(gbif_key, export_dir){
-  
-  res <- try(jsonlite::fromJSON(paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key)), silent = TRUE)
-  if (class(res) == "try-error"){
-    return(FALSE)
-  }else{
     dl <- try(download.file(paste0("http://api.gbif.org/v1/occurrence/download/request/", gbif_key), destfile = paste0(gbif_key, ".zip"), mode = "wb"), silent = TRUE)
     if (class(dl) == "try-error"){
       return(FALSE)
@@ -155,7 +162,6 @@ download_gbif <- function(gbif_key, export_dir){
       file.remove(paste0(gbif_key, ".zip"))
       return(res)
     }
-  }
 }
 
 

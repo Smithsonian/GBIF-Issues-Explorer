@@ -55,8 +55,10 @@ output$summaryPlot2 <- renderPlot({
   issues_by_rec <- dbGetQuery(gbif_db, "select a.no_issues as no_issues, count(a.gbifID) as no_records, round((count(a.gbifID + 0.0)/(b.total_records + 0.0))*100,2) as percent from (select gbifID, count(*) as no_issues from issues group by gbifID) a, (select count(gbifID) as total_records from gbif) b group by a.no_issues")
   
   issues_by_rec_none <- dbGetQuery(gbif_db, "select 0 as no_issues, count(a.gbifID) as no_records, round((count(a.gbifID + 0.0)/(b.total_records + 0.0))*100,2) as percent from (select gbifID from gbif WHERE gbifID NOT IN (select gbifID from issues)) a, (select count(gbifID) as total_records from gbif) b")
-  
-  issues_by_rec <- rbind(issues_by_rec, issues_by_rec_none)
+  if (issues_by_rec_none$no_records > 0){
+    #If there are records without issues, add them
+    issues_by_rec <- rbind(issues_by_rec, issues_by_rec_none)
+  }
   
   ggplot(data = issues_by_rec, aes(x = no_issues, y = no_records, label = percent, colour = no_issues, fill = no_issues)) +
     geom_col() +
@@ -98,7 +100,7 @@ output$summaryPlot3 <- renderPlot({
     scale_fill_gradient(low = "yellow", high = "red") + 
     labs(
         fill = "No. of Records\nwith both\nIssues", 
-        title = "Issues Sharing Records"
+        title = "Records Sharing Issues"
         )
 
 })
