@@ -2,7 +2,7 @@
 
 This [Shiny](https://shiny.rstudio.com/) app allows researchers and data/collection managers to navigate the records with issues in a GBIF Darwin Core Archive.
 
-![gbif](https://user-images.githubusercontent.com/2302171/43324300-c916968c-9181-11e8-8a47-5cd262820efe.png)
+![screencapture-127-0-0-1-4614-2018-09-03-21_32_27](https://user-images.githubusercontent.com/2302171/45005415-3787dd80-afc1-11e8-80d1-4c12e417ad19.png)
 
 The app can be used to:
 
@@ -12,7 +12,13 @@ The app can be used to:
  * Determine if an issue would affect an analysis:
    * For example, a COUNTRY_COORDINATE_MISMATCH could be because the coordinates fall just outside the country borders. Is this an error in the coordinates or an expected result of an occurrence in water?
 
-To use, just save the contents of a Darwin Core Archive download to the `data` folder. 
+![screencapture-127-0-0-1-4614-2018-09-03-21_34_01](https://user-images.githubusercontent.com/2302171/45005423-466e9000-afc1-11e8-8b4e-dc3f9cc9870e.png)
+
+To use, just provide the key to a Darwin Core Archive from GBIF. The download key can be requested via the GBIF API or on the website. If your download URL is:
+
+`www.gbif.org/occurrence/download/0001419-180824113759888`
+
+Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool.
 
 The app requires these packages:
 
@@ -33,7 +39,13 @@ The app requires these packages:
 To install:
 
 ```R
-install.packages(c("shiny", "DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "data.table", "RSQLite", "jsonlite", "R.utils", "shinyWidgets", "shinycssloaders"))
+install.packages(
+    c("shiny", "DT", "dplyr", 
+      "ggplot2", "stringr", "leaflet", 
+      "XML", "data.table", "RSQLite", 
+      "jsonlite", "R.utils", "shinyWidgets", 
+      "shinycssloaders")
+    )
 ```
 
 The first time the app is run, it takes some time to create a database, in particular for large data files. Afterwards, it uses the database, so it will be faster. 
