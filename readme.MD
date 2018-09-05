@@ -14,9 +14,11 @@ The app can be used to:
 
 ![screencapture-127-0-0-1-4614-2018-09-03-21_34_01](https://user-images.githubusercontent.com/2302171/45005423-466e9000-afc1-11e8-8b4e-dc3f9cc9870e.png)
 
-## Testing the app
+## Testing the app in local computer
 
-To test the app locally, just install Shiny, as well as the other required packages, and then run a command that will download the source files from Github. R version 3.3 or better is required. After starting R, copy and paste these commands:
+To test the app locally, without the need of a server, just install R and Shiny. Then, run a command that will download the source files from Github. 
+
+R version 3.3 or better is required. After starting R, copy and paste these commands:
 
 ```R
 install.packages(
@@ -31,7 +33,7 @@ library(shiny)
 runGitHub("GBIF-Issues-Explorer", "Smithsonian")
 ```
 
-Please note that the installation of the packages may take a few minutes to download and install. Future versions will try to reduce the number of dependencies.
+Please note that the installation of the required packages may take a few minutes to download and install. Future versions will try to reduce the number of dependencies.
 
 ## Install
 
@@ -58,7 +60,7 @@ The app requires R 3.3, or later, and these packages:
  * shinyWidgets
  * shinycssloaders
 
-To install:
+To install the required packages:
 
 ```R
 install.packages(
@@ -69,8 +71,6 @@ install.packages(
       "shinycssloaders")
     )
 ```
-
-Please note that some of these packages may take some time to install due to a number of dependencies. Future improvements will try to reduce these dependencies to a minimum. 
 
 The first time the app is run, it takes some time to create a database, in particular for large data files. Afterwards, it uses the database, so it will be faster. 
 

@@ -43,3 +43,7 @@ settings.R
 *.RData
 
 data/*
+
+*.zip
+*.txt
+*.xml
