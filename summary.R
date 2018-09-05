@@ -41,7 +41,7 @@ output$summaryPlot <- renderPlot({
           plot.title = element_text(size = 18, face="bold")
     ) + 
     labs(
-        title = "Number of Records by Issue", 
+        title = "Fig. 1. Issues in the downloaded dataset and the number of records per issue", 
         x = "Issue", 
         y = "No. of Records"
         )
@@ -50,39 +50,8 @@ output$summaryPlot <- renderPlot({
 
 
 
-# Plot records with multiple issues ----
-output$summaryPlot2 <- renderPlot({
-  issues_by_rec <- dbGetQuery(gbif_db, "select a.no_issues as no_issues, count(a.gbifID) as no_records, round((count(a.gbifID + 0.0)/(b.total_records + 0.0))*100,2) as percent from (select gbifID, count(*) as no_issues from issues group by gbifID) a, (select count(gbifID) as total_records from gbif) b group by a.no_issues")
-  
-  issues_by_rec_none <- dbGetQuery(gbif_db, "select 0 as no_issues, count(a.gbifID) as no_records, round((count(a.gbifID + 0.0)/(b.total_records + 0.0))*100,2) as percent from (select gbifID from gbif WHERE gbifID NOT IN (select gbifID from issues)) a, (select count(gbifID) as total_records from gbif) b")
-  if (issues_by_rec_none$no_records > 0){
-    #If there are records without issues, add them
-    issues_by_rec <- rbind(issues_by_rec, issues_by_rec_none)
-  }
-  
-  ggplot(data = issues_by_rec, aes(x = no_issues, y = no_records, label = percent, colour = no_issues, fill = no_issues)) +
-    geom_col() +
-    scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
-    theme(
-          axis.text = element_text(size = 12), 
-          axis.title = element_text(size = 14, face = "bold"), 
-          legend.position="none", 
-          plot.title = element_text(size = 18, face="bold")
-          ) + 
-    geom_text(aes(label = paste(percent, "%"), size = 10), position=position_dodge(width = 0.9), vjust = -0.5) +
-    labs(
-        title = "Number of Issues by Record", 
-        subtitle = "Percent is from total no. of rows", 
-        x = "No. of Issues/Record", 
-        y = "No. of Records"
-        )
-})
-
-
-
-
 # Related issues ----
-output$summaryPlot3 <- renderPlot({
+output$summaryPlot2 <- renderPlot({
   
   issues_summ <- dbGetQuery(gbif_db, "select replace(a.issue, '_', '\n') as issue_a, replace(b.issue, '_', '\n') as issue_b, count(a.gbifID) as no_records from (select gbifID, issue from issues) a LEFT JOIN (select gbifID, issue from issues) b ON (a.gbifID = b.gbifID AND a.issue != b.issue) WHERE b.issue IS NOT NULL GROUP BY a.issue")
   
@@ -100,7 +69,37 @@ output$summaryPlot3 <- renderPlot({
     scale_fill_gradient(low = "yellow", high = "red") + 
     labs(
         fill = "No. of Records\nwith both\nIssues", 
-        title = "Records Sharing Issues"
+        title = "Fig. 2. Pairwise image of issues common to the records"
         )
 
+})
+
+
+
+# Plot records with multiple issues ----
+output$summaryPlot3 <- renderPlot({
+  issues_by_rec <- dbGetQuery(gbif_db, "select a.no_issues as no_issues, count(a.gbifID) as no_records, round((count(a.gbifID + 0.0)/(b.total_records + 0.0))*100,2) as percent from (select gbifID, count(*) as no_issues from issues group by gbifID) a, (select count(gbifID) as total_records from gbif) b group by a.no_issues")
+  
+  issues_by_rec_none <- dbGetQuery(gbif_db, "select 0 as no_issues, count(a.gbifID) as no_records, round((count(a.gbifID + 0.0)/(b.total_records + 0.0))*100,2) as percent from (select gbifID from gbif WHERE gbifID NOT IN (select gbifID from issues)) a, (select count(gbifID) as total_records from gbif) b")
+  if (issues_by_rec_none$no_records > 0){
+    #If there are records without issues, add them
+    issues_by_rec <- rbind(issues_by_rec, issues_by_rec_none)
+  }
+  
+  ggplot(data = issues_by_rec, aes(x = no_issues, y = no_records, label = percent, colour = no_issues, fill = no_issues)) +
+    geom_col() +
+    scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
+    theme(
+      axis.text = element_text(size = 12), 
+      axis.title = element_text(size = 14, face = "bold"), 
+      legend.position="none", 
+      plot.title = element_text(size = 18, face="bold")
+    ) + 
+    geom_text(aes(label = paste(percent, "%"), size = 10), position=position_dodge(width = 0.9), vjust = -0.5) +
+    labs(
+      title = "Fig. 3. Number of issues by record", 
+      subtitle = "Percent is from total number of rows", 
+      x = "No. of Issues/Record", 
+      y = "No. of Records"
+    )
 })

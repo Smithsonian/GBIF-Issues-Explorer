@@ -14,6 +14,27 @@ The app can be used to:
 
 ![screencapture-127-0-0-1-4614-2018-09-03-21_34_01](https://user-images.githubusercontent.com/2302171/45005423-466e9000-afc1-11e8-8b4e-dc3f9cc9870e.png)
 
+## Testing the app
+
+To test the app locally, just install Shiny, as well as the other required packages, and then run a command that will download the source files from Github. R version 3.3 or better is required. After starting R, copy and paste these commands:
+
+```R
+install.packages(
+    c("shiny", "DT", "dplyr", 
+      "ggplot2", "stringr", "leaflet", 
+      "XML", "curl", "data.table", "RSQLite", 
+      "jsonlite", "R.utils", "shinyWidgets", 
+      "shinycssloaders")
+    )
+
+library(shiny)
+runGitHub("GBIF-Issues-Explorer", "Smithsonian")
+```
+
+Please note that the installation of the packages may take a few minutes to download and install. Future versions will try to reduce the number of dependencies.
+
+## Install
+
 To use, just provide the key to a Darwin Core Archive from GBIF. The download key can be requested via the GBIF API or on the website. If your download URL is:
 
 `www.gbif.org/occurrence/download/0001419-180824113759888`

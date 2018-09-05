@@ -4,7 +4,7 @@
 persistent_db <- FALSE
 
 # Maximum download size, in bytes.
-max_dl_size <- 50000000
+max_dl_size <- 5000000
 
 # No need to edit anything below this line
 
@@ -94,11 +94,11 @@ ui <- fluidPage(
         fluidRow(
           column(width = 6,
                  br(),
-                 plotOutput("summaryPlot3", height = 600)
+                 plotOutput("summaryPlot2", height = 600)
                  ),
           column(width = 6,
                  br(),
-                 plotOutput("summaryPlot2", height = 600)
+                 plotOutput("summaryPlot3", height = 600)
                  )
         )
         ),
@@ -499,7 +499,7 @@ server <- function(input, output, session) {
     output$distinct_issues <- renderUI({
       selectInput(inputId = "i",
                   label = "Select an issue:", 
-                  choices = c(distinct_issues),
+                  choices = distinct_issues,
                   width = 360
       )
     })
