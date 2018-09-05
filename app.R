@@ -811,7 +811,7 @@ server <- function(input, output, session) {
     HTML("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">How to use this tool</h3></div><div class=\"panel-body\">
          <p>Occurrence records in GBIF can be tagged with a number of issues that their system has detected. However, like the <a href=\"https://www.gbif.org/infrastructure/processing\" target = _blank>processing information page</a> indicates:</p>
          <pre>Not all issues indicate bad data. Some are merley flagging the fact that GBIF has altered values during processing.</pre>
-         <p>This tool allows collection and data managers, as well as researchers, to explore issues in GBIF Darwin Core Archive downloads in an easy web-based interface. Just enter a GBIF download key and the tool will download the zip file, create a local database, and display the issues in the data contained. Once provided with the GBIF key, this tool will:
+         <p>This tool allows collection and data managers, as well as researchers, to explore issues in GBIF Darwin Core Archive downloads in an easy web-based interface. Just enter a GBIF download key and the tool will download the zip file, create a local database, and display the issues in the data contained. Once provided with the GBIF key, this tool will:</p>
          <ul>
          <li>Download the zip archive</li>
          <li>Extract the files</li>
@@ -820,8 +820,7 @@ server <- function(input, output, session) {
          <li>Generate summary statistics of the issues</li>
          </ul>
          <p>Then, you can click on the 'Explore' tab to see how many records have been tagged with a particular issue.
-         <p>Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown, including a map if the records has coordinates. You can choose to delete the row from the local database. 
-         <p>After deleting records, you can download the verbatim and/or occurrence files without these records.
+         <p>Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown, including a map if the records has coordinates. You can choose to delete the row from the local database.</p>
          </div></div>")
   })
   
@@ -833,6 +832,16 @@ server <- function(input, output, session) {
           <pre>https://www.gbif.org/occurrence/download/0001419-180824113759888</pre>
           <p>Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool.</p>
           <p>This tool works only with Darwin Core Archives, not with CSV archives.</p>
+         </div></div>
+         
+         <div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">Deleting Records</h3></div><div class=\"panel-body\">
+        <p>You can delete individual records from the local database by clicking on the 'Delete record' button.</p>
+        <p>Deleted records will not show up in the table of results or when downloading the Occurrence or Verbatim files. This option can be used to remove records, for example, where:</p>
+         <ul>
+            <li>The issue is not a real problem and can be ignored</li>
+            <li>The issue has been fixed in the collection database</li>
+            <li>For researchers, the record can not be used in an analysis</li>
+         </ul>
          </div></div>")
   })
   
