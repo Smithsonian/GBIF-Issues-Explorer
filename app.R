@@ -4,7 +4,7 @@
 persistent_db <- FALSE
 
 # Maximum download size, in bytes.
-max_dl_size <- 5000000
+max_dl_size <- 50000000
 
 # No need to edit anything below this line
 
@@ -53,7 +53,7 @@ source("functions.R")
 
 # Settings ----
 app_name <- "GBIF Issues Explorer"
-app_ver <- "0.3"
+app_ver <- "0.3.1"
 github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
 
 occ_file <- "data/occurrence.txt"
@@ -171,7 +171,7 @@ ui <- fluidPage(
       )
   ),
   hr(),
-  HTML(paste0("<p><a href=\"http://dpo.si.edu\" target = _blank title = \"Digitization Program Office of the Smithsonian Institution\"><img src=\"circlelogo.png\"> Digitization Program Office</a> | ", app_name, " ver. ", app_ver, " | <a href=\"", github_link, "\" target = _blank>Source code</a></p>"))
+  HTML(paste0("<p><a href=\"http://dpo.si.edu\" target = _blank title = \"Digitization Program Office of the Smithsonian Institution\">Digitization Program Office, OCIO, Smithsonian</a> | ", app_name, " ver. ", app_ver, " | <a href=\"", github_link, "\" target = _blank>Source code</a></p>"))
 )
 
 
