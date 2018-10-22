@@ -4,6 +4,8 @@
 
 The Global Biodiversity Information Facility ([GBIF](https://gbif.org)) Secretariat announced today that the Smithsonian Institution’s Digitization Program Office ([DPO](http://dpo.si.edu)) was selected by an expert jury as a [winner in the 2018 Ebbe Nielsen Challenge](https://www.gbif.org/news/4TuHBNfycgO4GEMOKkMi4u/six-winners-top-the-2018-ebbe-nielsen-challenge). The entry, submitted by DPO Informatics Program Officer Luis J. Villanueva, the GBIF Issues Explorer, won a Second Place award among 23 entries from countries around the world. The Challenge was open to software tools that used GBIF data or tools to promote open science and open biodiversity data.
 
+[More details...](http://dpo.si.edu/blog/smithsonian-institution%E2%80%99s-digitization-program-office-wins-prize-gbif-2018-ebbe-nielsen)
+
 ![ebbenielsen2018](https://user-images.githubusercontent.com/2302171/47153516-e2243900-d2ad-11e8-9c62-ed6a919f2e69.png)
 
 ## Intro 
