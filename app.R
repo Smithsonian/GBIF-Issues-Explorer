@@ -203,8 +203,8 @@ server <- function(input, output, session) {
           h3("Explore the issues that GBIF has identified in the data in a DwC download."),
           #Shinyapps.io demo ----
           #p("This example deployment has a download key already entered in the field below. Just click 'Submit' to start the process."),
-          #textInput(inputId = "gbif_key", label = "GBIF Download Key:", value = "0004867-180824113759888"),
-          textInput(inputId = "gbif_key", label = "GBIF Download Key:"),
+          textInput(inputId = "gbif_key", label = "GBIF Download Key:", value = "0046569-180508205500799"),
+          #textInput(inputId = "gbif_key", label = "GBIF Download Key:"),
           actionButton("submitkey", 
                        label = "Submit", 
                        class = "btn btn-primary",
@@ -284,9 +284,20 @@ server <- function(input, output, session) {
         progress2$set(message = "Loading verbatim table", value = 0.05)
         on.exit(progress2$close())
         
-        db_created <- try(create_database(database_file, "data/dataset/"))
+        #Check if cols changed
+        gbif_check <- data.table::fread(input = occ_file, header = FALSE, sep = "\t", stringsAsFactors = FALSE, encoding = "UTF-8", quote = "", nrows = 1, skip = 1)
+        if (dim(gbif_check)[2] == 235){
+          cat(235)
+          db_created <- try(create_database(database_file, "data/dataset/", 235))
+        }else if(dim(gbif_check)[2] == 237){
+          cat(237)
+          db_created <- try(create_database(database_file, "data/dataset/", 237))
+        }else{
+          stop("Could not create database.")
+        }
         
         if (class(db_created) == "try-error"){
+          progress0$set(message = "Could not create database.", detail = "System needs to be updated because the data does not match", value = 0.99)
           stop("Could not create database.")
         }
         
