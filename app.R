@@ -53,7 +53,7 @@ source("functions.R")
 
 # Settings ----
 app_name <- "GBIF Issues Explorer"
-app_ver <- "0.3.1"
+app_ver <- "0.3.2"
 github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
 
 occ_file <- "data/occurrence.txt"
@@ -323,6 +323,7 @@ server <- function(input, output, session) {
         
         #loop to occ_file
         for (i in 1:no_steps){
+          cat(paste0("Step loading db: ", i, "\n"))
           if (i == 1){
             gbif_data <- data.table::fread(input = occ_file, header = FALSE, sep = "\t", stringsAsFactors = FALSE, encoding = "UTF-8", quote = "", nrows = (no_rows - 1), skip = 1)
             verbatim_data <- data.table::fread(input = ver_file, header = FALSE, sep = "\t", stringsAsFactors = FALSE, encoding = "UTF-8", quote = "", nrows = (no_rows - 1), skip = 1)
@@ -875,7 +876,7 @@ shinyApp(ui = ui, server = server, onStart = function() {
   onStop(function() {
     dbDisconnect(gbif_db)
     if (persistent_db == FALSE){
-      try(unlink("data", recursive = TRUE), silent = TRUE)
+      #try(unlink("data", recursive = TRUE), silent = TRUE)
     }
     cat("Removing objects\n")
     rm(list = ls())

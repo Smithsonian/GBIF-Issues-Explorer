@@ -213,11 +213,14 @@ create_database <- function(database_file, dataset_xml_path, no_cols){
   n <- dbExecute(gbif_db, 'CREATE INDEX ds_datasetKey ON datasets(datasetKey);')
   
   for (i in 1:no_datasets){
+    #cat(paste0(i, "\n"))
     meta_file <- xmlToList(datasets_xml[i])
     datasetKey <- str_replace(basename(datasets_xml[i]), ".xml", "")
-    datasetTitle <- meta_file$dataset$title
-    datasetInst <- meta_file$dataset$creator$organizationName
-    n <- dbExecute(gbif_db, paste0("INSERT INTO datasets (datasetKey, title, institution) VALUES ('", datasetKey, "', '", datasetTitle, "', '", datasetInst, "');"))
+    datasetTitle <- stringr::str_replace_all(meta_file$dataset$title, "'", "''")
+    datasetInst <- stringr::str_replace_all(meta_file$dataset$creator$organizationName, "'", "''")
+    insert_query <- paste0("INSERT INTO datasets (datasetKey, title, institution) VALUES ('", datasetKey, "', '", datasetTitle, "', '", datasetInst, "');")
+    cat(insert_query)
+    n <- dbExecute(gbif_db, insert_query)
   }
   # Close db ----
   dbDisconnect(gbif_db)
