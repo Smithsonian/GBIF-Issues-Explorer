@@ -53,7 +53,7 @@ source("functions.R")
 
 # Settings ----
 app_name <- "GBIF Issues Explorer"
-app_ver <- "0.3.2"
+app_ver <- "0.3.3"
 github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
 
 occ_file <- "data/occurrence.txt"
@@ -88,7 +88,8 @@ ui <- fluidPage(
           ),
           column(width = 6,
                  br(),
-                 plotOutput("summaryPlot", height = 600)
+                 #plotOutput("summaryPlot", height = 600)
+                 DT::dataTableOutput("summaryTable")
                  )
         ),
         fluidRow(
@@ -140,7 +141,8 @@ ui <- fluidPage(
                            HTML("</dd></dl>")
                      ),
                       column(width=4,
-                            HTML("<p class=\"pull-right\">Click a record for details</p>")
+                            uiOutput("clickdetails")
+                            #HTML("<p class=\"pull-right\">Click a record for details</p>")
                         )
                      ),
                      withSpinner(DT::dataTableOutput("table"))
@@ -171,7 +173,8 @@ ui <- fluidPage(
       )
   ),
   hr(),
-  HTML(paste0("<p><a href=\"http://dpo.si.edu\" target = _blank title = \"Digitization Program Office of the Smithsonian Institution\">Digitization Program Office, OCIO, Smithsonian</a> | ", app_name, " ver. ", app_ver, " | <a href=\"", github_link, "\" target = _blank>Source code</a></p>"))
+  #footer ----
+  HTML(paste0("<br><br><br><div class=\"footer navbar-fixed-bottom\" style=\"background: #FFFFFF;\"><br><p>&nbsp;&nbsp;<a href=\"http://dpo.si.edu\" target = _blank><img src=\"dpologo.jpg\"></a> | ", app_name, ", ver. ", app_ver, " | <a href=\"", github_link, "\" target = _blank>Source code</a></p></div>"))
 )
 
 
@@ -194,7 +197,7 @@ server <- function(input, output, session) {
     database_file <- paste0("data/gbif_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".sqlite3")
   }
   
-  print(database_file)
+  #print(database_file)
   
   # ask for key ----
   output$ask_key <- renderUI({
@@ -216,7 +219,7 @@ server <- function(input, output, session) {
   
   # Submit button ----
   observeEvent(input$submitkey, {
-    print(input$gbif_key)
+    #print(input$gbif_key)
     
     # Downloading GBIF file ---- 
     #add progress by using https://stackoverflow.com/a/42632792?
@@ -224,12 +227,12 @@ server <- function(input, output, session) {
     if (class(gbif_check) == "list"){
       dl_size <- gbif_check$size
       dl_size_human <- hsize(dl_size)
-      print(dl_size_human)
+      #print(dl_size_human)
     }else{
       #Messages ----
       output$messages <- renderUI({
         res <- try(jsonlite::fromJSON(paste0("http://api.gbif.org/v1/occurrence/download/", input$gbif_key)), silent = TRUE)
-        cat(res)
+        #cat(res)
         HTML(paste0("<p class=\"alert alert-danger\" role=\"alert\">Error: Could not find a download with that key</p>"))
       })
       req(FALSE)
@@ -287,10 +290,8 @@ server <- function(input, output, session) {
         #Check if cols changed
         gbif_check <- data.table::fread(input = occ_file, header = FALSE, sep = "\t", stringsAsFactors = FALSE, encoding = "UTF-8", quote = "", nrows = 1, skip = 1)
         if (dim(gbif_check)[2] == 235){
-          cat(235)
           db_created <- try(create_database(database_file, "data/dataset/", 235))
         }else if(dim(gbif_check)[2] == 237){
-          cat(237)
           db_created <- try(create_database(database_file, "data/dataset/", 237))
         }else{
           stop("Could not create database.")
@@ -524,7 +525,7 @@ server <- function(input, output, session) {
   # Table of records with issue ----
   datarows <- reactive({
     req(input$i)
-    cat(input$i)
+    #cat(input$i)
     #Which cols to display by type of issue
     if (input$i %in% spatial_issues){
       cols <- "gbifID, scientificName, decimalLatitude, decimalLongitude, locality, country"
@@ -539,7 +540,7 @@ server <- function(input, output, session) {
     }
     
     query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
-    print(query)
+    #print(query)
     datarows <- dbGetQuery(gbif_db, query)
 
     df <- data.frame(datarows, stringsAsFactors = FALSE)
@@ -577,7 +578,7 @@ server <- function(input, output, session) {
                             
     html_to_print <- paste0(html_to_print, 
                             actionButton("delrecord", 
-                            label = "Delete record", 
+                            label = "Hide record", 
                             class = "btn btn-danger pull-right",
                             icon = icon("remove", lib = "glyphicon")),
                             br()
@@ -821,7 +822,9 @@ server <- function(input, output, session) {
   # Help1 ----
   output$help1 <- renderUI({
     HTML("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">How to use this tool</h3></div><div class=\"panel-body\">
-         <p>Occurrence records in GBIF can be tagged with a number of issues that their system has detected. However, like the <a href=\"https://www.gbif.org/infrastructure/processing\" target = _blank>processing information page</a> indicates:</p>
+         <p>Occurrence records in GBIF can be tagged with a number of issues that their system has detected. However, like the 
+         <a href=\"https://www.gbif.org/article/5i3CQEZ6DuWiycgMaaakCo/gbif-infrastructure-data-processing\" target = _blank>
+         processing information page</a> indicates:</p>
          <pre>Not all issues indicate bad data. Some are merley flagging the fact that GBIF has altered values during processing.</pre>
          <p>This tool allows collection and data managers, as well as researchers, to explore issues in GBIF Darwin Core Archive downloads in an easy web-based interface. Just enter a GBIF download key and the tool will download the zip file, create a local database, and display the issues in the data contained. Once provided with the GBIF key, this tool will:</p>
          <ul>
@@ -856,6 +859,13 @@ server <- function(input, output, session) {
          </ul>
          </div></div>")
   })
+  
+  
+  output$clickdetails <- renderUI({
+    req(input$i)
+    HTML("<p class=\"pull-right\">Click a record for details</p>")
+  })
+  
   
   session$onSessionEnded(function() {
     dbDisconnect(gbif_db)

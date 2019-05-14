@@ -219,7 +219,7 @@ create_database <- function(database_file, dataset_xml_path, no_cols){
     datasetTitle <- stringr::str_replace_all(meta_file$dataset$title, "'", "''")
     datasetInst <- stringr::str_replace_all(meta_file$dataset$creator$organizationName, "'", "''")
     insert_query <- paste0("INSERT INTO datasets (datasetKey, title, institution) VALUES ('", datasetKey, "', '", datasetTitle, "', '", datasetInst, "');")
-    cat(insert_query)
+    #cat(insert_query)
     n <- dbExecute(gbif_db, insert_query)
   }
   # Close db ----
