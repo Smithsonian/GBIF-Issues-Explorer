@@ -335,7 +335,12 @@ server <- function(input, output, session) {
           }
           
           #Set names to df  
-          names(gbif_data) <- col_names
+          if (dim(gbif_check)[2] == 235){
+            names(gbif_data) <- col_names
+          }else if(dim(gbif_check)[2] == 237){
+            names(gbif_data) <- col_names_237
+          }
+          
           names(verbatim_data) <- verbatim_cols
           
           #write rows
