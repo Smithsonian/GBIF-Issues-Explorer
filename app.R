@@ -1,7 +1,7 @@
 # Persistent database? ----
 # TRUE: Keep the database once built, or
 # FALSE: destroy at the end of each session
-persistent_db <- FALSE
+persistent_db <- TRUE
 
 # Maximum download size, in bytes.
 max_dl_size <- 50000000
@@ -53,7 +53,7 @@ source("functions.R")
 
 # Settings ----
 app_name <- "GBIF Issues Explorer"
-app_ver <- "0.3.3"
+app_ver <- "0.3.4"
 github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
 
 occ_file <- "data/occurrence.txt"
@@ -74,21 +74,20 @@ ui <- fluidPage(
      tabPanel("Summary", 
         br(),
         fluidRow(
-          column(width = 6,
+          column(width = 4,
                  uiOutput("ask_key")
           ),
-          column(width = 6,
+          column(width = 8,
                  uiOutput("messages")
           )
         ),
         fluidRow(
-          column(width = 6,
+          column(width = 4,
                  br(),
                  uiOutput("download_doi")
           ),
-          column(width = 6,
+          column(width = 8,
                  br(),
-                 #plotOutput("summaryPlot", height = 600)
                  DT::dataTableOutput("summaryTable")
                  )
         ),
@@ -785,7 +784,7 @@ server <- function(input, output, session) {
     req(input$i)
     tagList(
       HTML("<div class=\"panel panel-success\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">Download Occurrence</h3></div><div class=\"panel-body\">
-           <p>To download the occurrence file, in csv format, without the deleted rows:"),
+           <p>To download the occurrence file, in csv format, without the hidden rows:"),
       uiOutput("downloadOccFile"),
       HTML("</div></div>")
       )
@@ -814,7 +813,7 @@ server <- function(input, output, session) {
     req(input$i)
     tagList(
       HTML("<div class=\"panel panel-success\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">Download Verbatim</h3></div><div class=\"panel-body\">
-           <p>To download the verbatim file, in csv format, without the deleted rows:"),
+           <p>To download the verbatim file, in csv format, without the hidden rows:"),
       uiOutput("downloadOccFile1"),
       HTML("</div></div>")
     )

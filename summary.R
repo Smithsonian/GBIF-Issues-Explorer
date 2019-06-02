@@ -2,7 +2,7 @@
 output$summaryPlot <- renderPlot({
   
   gbif_db <- dbConnect(RSQLite::SQLite(), database_file)
-  # Get rows with issues ----
+  # Get rows with issues
   distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
   distinct_issues <- unlist(distinct_issues, use.names = FALSE)
   
@@ -27,7 +27,7 @@ output$summaryPlot <- renderPlot({
   summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(-summary_vals$no_records)])
   levels(summary_vals$issue) <- gsub("_", " ", levels(summary_vals$issue))
 
-  # Close db ----
+  # Close db
   dbDisconnect(gbif_db)
   
   ggplot(data = summary_vals, aes(x = issue, y = no_records, label = issue, colour = issue, fill = issue)) +
@@ -54,7 +54,7 @@ output$summaryPlot <- renderPlot({
 output$summaryTable <- DT::renderDataTable({
   
   gbif_db <- dbConnect(RSQLite::SQLite(), database_file)
-  # Get rows with issues ----
+  # Get rows with issues
   distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
   distinct_issues <- unlist(distinct_issues, use.names = FALSE)
   
@@ -73,35 +73,34 @@ output$summaryTable <- DT::renderDataTable({
       issue_description <- "NA"
     }
     
-    summary_vals <- rbind(summary_vals, cbind(distinct_issues[i], issue_description, as.numeric(this_issue[1]), round((as.numeric(this_issue[1])/total_rows) * 100, 2)))
+    #summary_vals <- rbind(summary_vals, cbind(distinct_issues[i], issue_description, as.numeric(this_issue[1]), round((as.numeric(this_issue[1])/total_rows) * 100, 2)))
+    summary_vals <- rbind(summary_vals, cbind(distinct_issues[i], issue_description, as.numeric(this_issue[1])))
   }
   
-  names(summary_vals) <- c("issue", "description", "no_records", "percent")
+  #names(summary_vals) <- c("issue", "description", "no_records", "percent")
+  names(summary_vals) <- c("issue", "description", "no_records")
   summary_vals$no_records <- as.numeric(paste(summary_vals$no_records))
   
-  #Sort by no of cases
-  #summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(-summary_vals$no_records)])
-  levels(summary_vals$issue) <- gsub("_", " ", levels(summary_vals$issue))
+  #Remove underscores from issue names
+  summary_vals$issue <- gsub("_", " ", summary_vals$issue)
   
-  # Close db ----
+  # Close db
   dbDisconnect(gbif_db)
   
-  names(summary_vals) <- c("Issue", "Description", "No. records", "Percent")
+  names(summary_vals) <- c("Issue", "Description", "No. records")
   
   DT::datatable(summary_vals, 
                 caption = 'Table 1. Issues in the downloaded dataset and the number of records per issue', 
                 escape = FALSE, 
                 options = list(searching = FALSE, 
                                ordering = TRUE, 
-                               pageLength = 6, 
+                               pageLength = 10, 
                                paging = TRUE,
                                order = list(2, 'desc')
                                ), 
                 rownames = FALSE, 
-                selection = 'none') #%>% DT::formatStyle(
-                #   no_cols,
-                #   backgroundColor = DT::styleEqual(c(0, 1, no_matches_vals), c('#f2dede', '#dff0d8', no_matches_vals_colors)),
-                # )
+                selection = 'none') %>% 
+                      formatCurrency('No. records', currency = "", interval = 3, mark = ",", digits = 0)
 })
 
 
@@ -121,7 +120,7 @@ output$summaryPlot2 <- renderPlot({
           #axis.text = element_text(size = 10),
           plot.title = element_text(size = 18, face="bold")) +
     scale_x_discrete(limits = levels(issues_summ$issue_a)) + 
-    scale_y_discrete(limits = levels(issues_summ$issue_b)) + 
+    scale_y_discrete(limits = levels(issues_summ$issue_b), position = "right") + 
     scale_fill_gradient(low = "yellow", high = "red") + 
     labs(
         fill = "No. of Records\nwith both\nIssues", 

@@ -6,7 +6,7 @@ output$download_doi <- renderText({
   metadata_json <- paste0("http://api.gbif.org/v1/occurrence/download/", gbif_key)
   gbif_metadata <- unlist(jsonlite::fromJSON(metadata_json))
   
-  html_to_print <- paste0("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Occurrence Download Metadata</h3></div><div class=\"panel-body\"><div style = \"overflow-y: auto; overflow-x: auto;\"><dl class=\"dl-horizontal\">")
+  html_to_print <- paste0("<div class=\"panel panel-primary\"> <div class=\"panel-heading\"> <h3 class=\"panel-title\">GBIF Occurrence Download Metadata</h3></div><div class=\"panel-body\"><div style = \"overflow-y: auto; overflow-x: auto;\"><dl>")
   
   for (i in 1:length(gbif_metadata)){
     html_to_print <- paste0(html_to_print, "<dt>", names(gbif_metadata[i]), "</dt>")
@@ -14,6 +14,10 @@ output$download_doi <- renderText({
       html_to_print <- paste0(html_to_print, "<dd><a href=\"https://doi.org/", gbif_metadata[i], "\" target = _blank>", gbif_metadata[i], "</a></dd>")
     }else if(names(gbif_metadata[i]) == "downloadLink" || names(gbif_metadata[i]) == "license"){
       html_to_print <- paste0(html_to_print, "<dd><a href=\"", gbif_metadata[i], "\" target = _blank>", gbif_metadata[i], "</a></dd>")
+    }else if(names(gbif_metadata[i]) == "size"){
+      html_to_print <- paste0(html_to_print, "<dd>", utils:::format.object_size(as.numeric(gbif_metadata[i]), "auto"), "</dd>")
+    }else if(names(gbif_metadata[i]) == "totalRecords" || names(gbif_metadata[i]) == "numberDatasets"){
+      html_to_print <- paste0(html_to_print, "<dd>", prettyNum(gbif_metadata[i], big.mark = ","), "</dd>")
     }else{
       html_to_print <- paste0(html_to_print, "<dd>", gbif_metadata[i], "</dd>")
     }
