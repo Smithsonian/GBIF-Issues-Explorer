@@ -158,6 +158,11 @@ ui <- fluidPage(
                )
           )
       ),
+     # Tab:DataFields ----
+     tabPanel("Fields Summary", 
+              uiOutput("explore_fields"),
+              withSpinner(DT::dataTableOutput("fields_table"))
+     ),
      # Tab:Help ----
       tabPanel("Help", 
            br(),
@@ -496,6 +501,11 @@ server <- function(input, output, session) {
     
     # Summary ----
     eval(parse("summary.R"))
+    
+    
+    # Fields Summary ----
+    eval(parse("fieldssummary.R"))
+    
   })
   
   
@@ -821,6 +831,11 @@ server <- function(input, output, session) {
   
   
   
+  #explore_fields----
+  output$explore_fields <- renderUI({
+    h3("Once the data is loaded, you can explore the data fields used in this dataset.")
+  })
+              
   
   
   # Help1 ----
