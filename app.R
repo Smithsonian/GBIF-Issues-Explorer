@@ -85,7 +85,6 @@ ui <- fluidPage(
      
      # Tab:Explore ----
       tabPanel("Explore", 
-               h3("Once the data is loaded, you can explore the issues."),
                fluidRow(
                column(width = 4,
                       br(),
@@ -140,8 +139,17 @@ ui <- fluidPage(
       ),
      # Tab:DataFields ----
      tabPanel("Fields Summary", 
-              uiOutput("explore_fields"),
-              withSpinner(DT::dataTableOutput("fields_table"))
+              br(),
+              fluidRow(
+                column(width = 6, 
+                       uiOutput("explore_fields"),
+                       withSpinner(DT::dataTableOutput("fields_table"))
+                ),
+                column(width = 6, 
+                       DT::dataTableOutput("fields_details")
+                )
+              )
+              
      ),
      # Tab:Help ----
       tabPanel("Help", 
@@ -193,6 +201,8 @@ server <- function(input, output, session) {
         )
      }
     })
+  
+  
   
   
   # Submit button ----
@@ -265,9 +275,9 @@ server <- function(input, output, session) {
         #Check if cols changed
         gbif_check <- data.table::fread(input = occ_file, header = FALSE, sep = "\t", stringsAsFactors = FALSE, encoding = "UTF-8", quote = "", nrows = 1, skip = 1)
         if (dim(gbif_check)[2] == 235){
-          db_created <- try(create_database(database_file, "data/dataset/", 235))
+          db_created <- try(create_database(database_file, "data/dataset/"))
         }else if(dim(gbif_check)[2] == 237){
-          db_created <- try(create_database(database_file, "data/dataset/", 237))
+          db_created <- try(create_database(database_file, "data/dataset/"))
         }else{
           stop("Could not create database.")
         }
@@ -311,11 +321,13 @@ server <- function(input, output, session) {
           }
           
           #Set names to df  
-          if (dim(gbif_check)[2] == 235){
-            names(gbif_data) <- col_names
-          }else if(dim(gbif_check)[2] == 237){
-            names(gbif_data) <- col_names_237
+          gbif_cols <- data.table::fread(input = "data/occurrence.txt", header = FALSE, sep = "\t", stringsAsFactors = FALSE, encoding = "UTF-8", quote = "", nrows = 1)
+          
+          if (dim(gbif_data)[2] == 238){
+            gbif_data <- cbind(gbif_data, NA)
           }
+          
+          names(gbif_data) <- tolower(unlist(gbif_cols))
           
           names(verbatim_data) <- verbatim_cols
           
@@ -476,8 +488,8 @@ server <- function(input, output, session) {
     eval(parse("summary.R"))
     
     
-    # Fields Summary ----
     eval(parse("fieldssummary.R"))
+    
     
   })
   
@@ -510,6 +522,7 @@ server <- function(input, output, session) {
     eval(parse("summary.R"))
   }
   
+  eval(parse("fieldssummary.R"))
   
   # Table of records with issue ----
   datarows <- reactive({
@@ -819,13 +832,6 @@ server <- function(input, output, session) {
     )
   })
   
-  
-  
-  #explore_fields----
-  output$explore_fields <- renderUI({
-    h3("Once the data is loaded, you can explore the data fields used in this dataset.")
-  })
-              
   
   
   # Help1 ----

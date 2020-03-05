@@ -72,5 +72,9 @@ output$download_doi <- renderText({
     HTML(paste0("<p class=\"alert alert-success\" role=\"alert\">Loaded download ", metadata_json$key, " (doi: ", metadata_json$doi, ") with ", no_datasets," ", datasets_text, " and ", prettyNum(metadata_json$totalRecords, big.mark = ",", scientific=FALSE), " occurrence records.</p>"))
   })
   
+  output$ask_key <- renderUI({
+  })
+  
+  
   HTML(html_to_print)
 })
