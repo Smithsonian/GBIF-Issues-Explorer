@@ -1,52 +1,52 @@
-# summaryPlot - Plot issues ----
-output$summaryPlot <- renderPlot({
-  
-  gbif_db <- dbConnect(RSQLite::SQLite(), database_file)
-  # Get rows with issues
-  distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
-  distinct_issues <- unlist(distinct_issues, use.names = FALSE)
-  
-  #summary 
-  summary_vals <- data.frame(matrix(ncol = 2, nrow = 0, data = NA))
-  
-  for (i in 1:length(distinct_issues)){
-    this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM issues WHERE issue = '", distinct_issues[i], "'"))
-    summary_vals <- rbind(summary_vals, cbind(distinct_issues[i], as.numeric(this_issue[1])))
-  }
-  
-  # #no issues
-  # this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM gbif WHERE issue = ''"))
-  # summary_vals <- rbind(summary_vals, cbind("None", as.numeric(this_issue[1])))
-  
-  names(summary_vals) <- c("issue", "no_records")
-  summary_vals$no_records <- as.numeric(paste(summary_vals$no_records))
-  
-  
-  #Sort by no of cases
-  #summary_vals <- summary_vals[order(-summary_vals$no_records),]
-  summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(-summary_vals$no_records)])
-  levels(summary_vals$issue) <- gsub("_", " ", levels(summary_vals$issue))
-
-  # Close db
-  dbDisconnect(gbif_db)
-  
-  ggplot(data = summary_vals, aes(x = issue, y = no_records, label = issue, colour = issue, fill = issue)) +
-    geom_col() +
-    scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
-    theme(
-          axis.text = element_text(size = 10), 
-          axis.title = element_text(size = 14, face = "bold"), 
-          axis.text.x = element_text(size=10, angle = 45, hjust = 1),
-          legend.position="none", 
-          #axis.text.x = element_text(size=10, angle = 45, hjust = 1), 
-          plot.title = element_text(size = 18, face="bold")
-    ) + 
-    labs(
-        title = "Fig. 1. Issues in the downloaded dataset and the number of records per issue", 
-        x = "Issue", 
-        y = "No. of Records"
-        )
-})
+# # summaryPlot - Plot issues ----
+# output$summaryPlot <- renderPlot({
+#   
+#   gbif_db <- dbConnect(RSQLite::SQLite(), database_file)
+#   # Get rows with issues
+#   distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
+#   distinct_issues <- unlist(distinct_issues, use.names = FALSE)
+#   
+#   #summary 
+#   summary_vals <- data.frame(matrix(ncol = 2, nrow = 0, data = NA))
+#   
+#   for (i in 1:length(distinct_issues)){
+#     this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM issues WHERE issue = '", distinct_issues[i], "'"))
+#     summary_vals <- rbind(summary_vals, cbind(distinct_issues[i], as.numeric(this_issue[1])))
+#   }
+#   
+#   # #no issues
+#   # this_issue <- dbGetQuery(gbif_db, paste0("SELECT count(*) FROM gbif WHERE issue = ''"))
+#   # summary_vals <- rbind(summary_vals, cbind("None", as.numeric(this_issue[1])))
+#   
+#   names(summary_vals) <- c("issue", "no_records")
+#   summary_vals$no_records <- as.numeric(paste(summary_vals$no_records))
+#   
+#   
+#   #Sort by no of cases
+#   #summary_vals <- summary_vals[order(-summary_vals$no_records),]
+#   summary_vals$issue <- factor(summary_vals$issue, levels = summary_vals$issue[order(-summary_vals$no_records)])
+#   levels(summary_vals$issue) <- gsub("_", " ", levels(summary_vals$issue))
+# 
+#   # Close db
+#   dbDisconnect(gbif_db)
+#   
+#   ggplot(data = summary_vals, aes(x = issue, y = no_records, label = issue, colour = issue, fill = issue)) +
+#     geom_col() +
+#     scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
+#     theme(
+#           axis.text = element_text(size = 10), 
+#           axis.title = element_text(size = 14, face = "bold"), 
+#           axis.text.x = element_text(size=10, angle = 45, hjust = 1),
+#           legend.position="none", 
+#           #axis.text.x = element_text(size=10, angle = 45, hjust = 1), 
+#           plot.title = element_text(size = 18, face="bold")
+#     ) + 
+#     labs(
+#         title = "Fig. 1. Issues in the downloaded dataset and the number of records per issue", 
+#         x = "Issue", 
+#         y = "No. of Records"
+#         )
+# })
 
 
 
@@ -124,7 +124,7 @@ output$summaryPlot2 <- renderPlot({
     scale_fill_gradient(low = "yellow", high = "red") + 
     labs(
         fill = "No. of Records\nwith both\nIssues", 
-        title = "Fig. 1. Pairwise image of issues common to the records"
+        title = "Fig. 2. Pairwise image of issues common to the records"
         )
 
 })
@@ -152,7 +152,7 @@ output$summaryPlot3 <- renderPlot({
     ) + 
     geom_text(aes(label = paste(percent, "%"), size = 10), position=position_dodge(width = 0.9), vjust = -0.5) +
     labs(
-      title = "Fig. 2. Number of issues by record", 
+      title = "Fig. 1. Number of issues by record", 
       subtitle = "Percent is from total number of rows", 
       x = "No. of Issues/Record", 
       y = "No. of Records"

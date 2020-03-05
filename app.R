@@ -1,48 +1,25 @@
-# Persistent database? ----
-# TRUE: Keep the database once built, or
-# FALSE: destroy at the end of each session
-persistent_db <- TRUE
-
-# Maximum download size, in bytes.
-max_dl_size <- 50000000
-
-# No need to edit anything below this line
-
-
-
-
-
 # Load/install packages ----
-#from https://stackoverflow.com/a/4090208
-list.of.packages <- c("shiny", "DT", "dplyr", "ggplot2", "stringr", "leaflet", "XML", "curl", "data.table", "RSQLite", "jsonlite", "R.utils", "shinyWidgets", "shinycssloaders")
+library("shiny")
+library("DT")
+library("dplyr")
+library("ggplot2")
+library("stringr")
+library("leaflet")
+library("XML")
+library("curl")
+library("data.table")
+library("DBI")
+library("RSQLite")
+library("jsonlite")
+library("R.utils")
+library("shinyWidgets")
+library("shinycssloaders")
 
-# Comment the installation lines for deployment in shinyapps.io
-# http://docs.rstudio.com/shinyapps.io/getting-started.html#using-your-r-packages-in-the-cloud
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)){
-  install.packages(new.packages)
-}
 
-for (package in list.of.packages){
-  library(package, character.only = TRUE)
-}
 
-#Shinyapps.io demo ----
-# library(shiny)
-# library(DT)
-# library(dplyr)
-# library(ggplot2)
-# library(stringr)
-# library(leaflet)
-# library(XML)
-# library(data.table)
-# library(RSQLite)
-# library(jsonlite)
-# library(R.utils)
-# library(shinyWidgets)
-# library(shinycssloaders)
-# library(curl)
 
+#Import settings----
+source("settings.R")
 
 
 # Import definitions, cols, functions ----
@@ -51,9 +28,8 @@ source("functions.R")
 
 
 
-# Settings ----
-app_name <- "GBIF Issues Explorer"
-app_ver <- "0.3.4"
+# System Settings ----
+app_ver <- "0.4.0"
 github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
 
 occ_file <- "data/occurrence.txt"
@@ -82,25 +58,29 @@ ui <- fluidPage(
           )
         ),
         fluidRow(
-          column(width = 4,
-                 br(),
-                 uiOutput("download_doi")
-          ),
-          column(width = 8,
-                 br(),
-                 DT::dataTableOutput("summaryTable")
-                 )
-        ),
-        fluidRow(
           column(width = 6,
+                 br(),
+                 plotOutput("summaryPlot3", height = 600),
                  br(),
                  plotOutput("summaryPlot2", height = 600)
-                 ),
+          ),
           column(width = 6,
                  br(),
-                 plotOutput("summaryPlot3", height = 600)
+                 DT::dataTableOutput("summaryTable"),
+                 br(),
+                 uiOutput("download_doi")
                  )
-        )
+        )#,
+        # fluidRow(
+        #   column(width = 6,
+        #          br(),
+        #          plotOutput("summaryPlot2", height = 600)
+        #          ),
+        #   column(width = 6,
+        #          br(),
+        #          plotOutput("summaryPlot3", height = 600)
+        #          )
+        # )
         ),
      
      # Tab:Explore ----
@@ -188,7 +168,6 @@ ui <- fluidPage(
 # Server ----
 server <- function(input, output, session) {
   
-  #rm("registerShinyDebugHook", envir = as.environment("tools:rstudio"))
   dir.create("data", showWarnings = FALSE)
   
   if (!exists("persistent_db")){
@@ -201,17 +180,12 @@ server <- function(input, output, session) {
     database_file <- paste0("data/gbif_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".sqlite3")
   }
   
-  #print(database_file)
-  
   # ask for key ----
   output$ask_key <- renderUI({
     if (!file.exists(database_file)){
         tagList(
           h3("Explore the issues that GBIF has identified in the data in a DwC download."),
-          #Shinyapps.io demo ----
-          #p("This example deployment has a download key already entered in the field below. Just click 'Submit' to start the process."),
           textInput(inputId = "gbif_key", label = "GBIF Download Key:", value = "0046569-180508205500799"),
-          #textInput(inputId = "gbif_key", label = "GBIF Download Key:"),
           actionButton("submitkey", 
                        label = "Submit", 
                        class = "btn btn-primary",
@@ -223,7 +197,6 @@ server <- function(input, output, session) {
   
   # Submit button ----
   observeEvent(input$submitkey, {
-    #print(input$gbif_key)
     
     # Downloading GBIF file ---- 
     #add progress by using https://stackoverflow.com/a/42632792?
@@ -231,12 +204,10 @@ server <- function(input, output, session) {
     if (class(gbif_check) == "list"){
       dl_size <- gbif_check$size
       dl_size_human <- hsize(dl_size)
-      #print(dl_size_human)
     }else{
       #Messages ----
       output$messages <- renderUI({
         res <- try(jsonlite::fromJSON(paste0("http://api.gbif.org/v1/occurrence/download/", input$gbif_key)), silent = TRUE)
-        #cat(res)
         HTML(paste0("<p class=\"alert alert-danger\" role=\"alert\">Error: Could not find a download with that key</p>"))
       })
       req(FALSE)
@@ -306,7 +277,8 @@ server <- function(input, output, session) {
           stop("Could not create database.")
         }
         
-        gbif_db <<- dbConnect(RSQLite::SQLite(), database_file)
+        gbif_db <- dbConnect(RSQLite::SQLite(), database_file)
+        session$userData$gbif_db <- gbif_db
         
         progress0$set(value = 1, message = "Creating database")
         progress0$close()
@@ -434,7 +406,7 @@ server <- function(input, output, session) {
 
         #summary 
         for (i in 1:length(distinct_issues)){
-          dbExecute(gbif_db, paste0("INSERT INTO issues (gbifID, issue) SELECT gbifID, '", distinct_issues[i], "' FROM gbif WHERE issue LIKE '%", distinct_issues[i], "%'"))
+          dbExecute(gbif_db, paste0("INSERT INTO issues (gbifid, issue) SELECT gbifid, '", distinct_issues[i], "' FROM gbif WHERE issue LIKE '%", distinct_issues[i], "%'"))
         }
         
         progress$set(message = "Loading data", value = 0.95)
@@ -453,7 +425,8 @@ server <- function(input, output, session) {
       }
       
       # Open database ----
-      gbif_db <<- dbConnect(RSQLite::SQLite(), database_file)
+      gbif_db <- dbConnect(RSQLite::SQLite(), database_file)
+      session$userData$gbif_db <- gbif_db
       
       # Metadata of Download ----
       eval(parse("dlmeta.R"))
@@ -513,14 +486,16 @@ server <- function(input, output, session) {
   # Persistent ----
   if (persistent_db && file.exists(database_file)){
     
-    gbif_db <<- dbConnect(RSQLite::SQLite(), database_file)
+    gbif_db <- dbConnect(RSQLite::SQLite(), database_file)
+    session$userData$gbif_db <- gbif_db
     
     # Metadata of Download ----
     eval(parse("dlmeta.R"))
     
     # Get rows with issues
     distinct_issues <- dbGetQuery(gbif_db, "SELECT DISTINCT issue FROM issues")
-    distinct_issues <<- unlist(distinct_issues, use.names = FALSE)
+    distinct_issues <- unlist(distinct_issues, use.names = FALSE)
+    session$userData$distinct_issues <- distinct_issues
     
     #distinct_issues pulldown ----
     output$distinct_issues <- renderUI({
@@ -538,23 +513,25 @@ server <- function(input, output, session) {
   
   # Table of records with issue ----
   datarows <- reactive({
+    gbif_db <- session$userData$gbif_db
+    
     req(input$i)
-    #cat(input$i)
+    cat(input$i)
     #Which cols to display by type of issue
     if (input$i %in% spatial_issues){
-      cols <- "gbifID, scientificName, decimalLatitude, decimalLongitude, locality, country"
+      cols <- "gbifid, scientificName, decimalLatitude, decimalLongitude, locality, country"
     }else if (input$i %in% depth_issues){
-      cols <- "gbifID, scientificName, minimumDepthInMeters, maximumDepthInMeters, verbatimDepth"
+      cols <- "gbifid, scientificName, minimumDepthInMeters, maximumDepthInMeters, verbatimDepth"
     }else if (input$i %in% elev_issues){
-      cols <- "gbifID, scientificName, minimumElevationInMeters, maximumElevationInMeters, verbatimElevation"
+      cols <- "gbifid, scientificName, minimumElevationInMeters, maximumElevationInMeters, verbatimElevation"
     }else if (input$i %in% date_issues){
-      cols <- "gbifID, scientificName, eventDate, eventTime, startDayOfYear, endDayOfYear,year, month, day"
+      cols <- "gbifid, scientificName, eventDate, eventTime, startDayOfYear, endDayOfYear,year, month, day"
     }else{
-      cols <- "gbifID, scientificName, recordedBy, locality, country"
+      cols <- "gbifid, scientificName, recordedBy, locality, country"
     }
     
-    query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)")
-    #print(query)
+    query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifid IN (SELECT gbifid from issues WHERE issue = '", input$i, "') and gbifid NOT IN (SELECT gbifid FROM gbif WHERE ignorerow = 1)")
+    print(query)
     datarows <- dbGetQuery(gbif_db, query)
 
     df <- data.frame(datarows, stringsAsFactors = FALSE)
@@ -564,9 +541,7 @@ server <- function(input, output, session) {
 
   output$table <- DT::renderDataTable({
     req(input$i)
-    DT::datatable(datarows(), escape = FALSE, options = list(searching = TRUE, ordering = TRUE, pageLength = 10), rownames = FALSE, selection = 'single', isolate({
-      datarows()
-    }))
+    DT::datatable(datarows(), escape = FALSE, options = list(searching = TRUE, ordering = TRUE, pageLength = 10), rownames = FALSE, selection = 'single')
   }, server = TRUE)
   
   
@@ -576,19 +551,21 @@ server <- function(input, output, session) {
   output$recorddetail <- renderUI({
     req(input$table_rows_selected)
     
+    gbif_db <- session$userData$gbif_db
+    
     if (input$i == "None"){
-      this_summary_ids <- dbGetQuery(gbif_db, "SELECT gbifID FROM gbif WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) and ignorerow = 0")
+      this_summary_ids <- dbGetQuery(gbif_db, "SELECT gbifid FROM gbif WHERE gbifid NOT IN (SELECT DISTINCT gbifid FROM issues) and ignorerow = 0")
     }else{
-      this_summary_ids <- dbGetQuery(gbif_db, paste0("SELECT gbifID FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and ignorerow = 0"))
+      this_summary_ids <- dbGetQuery(gbif_db, paste0("SELECT gbifid FROM gbif WHERE gbifid IN (SELECT gbifid from issues WHERE issue = '", input$i, "') and ignorerow = 0"))
     }
     
-    this_record <- dbGetQuery(gbif_db, paste0("SELECT * FROM gbif WHERE gbifID = ", this_summary_ids[input$table_rows_selected,]))
-    this_record_dataset <- dbGetQuery(gbif_db, paste0("SELECT * FROM datasets WHERE datasetKey in (SELECT datasetKey FROM gbif WHERE gbifID = ", this_record$gbifID, ")"))
+    this_record <- dbGetQuery(gbif_db, paste0("SELECT * FROM gbif WHERE gbifid = ", this_summary_ids[input$table_rows_selected,]))
+    this_record_dataset <- dbGetQuery(gbif_db, paste0("SELECT * FROM datasets WHERE datasetKey in (SELECT datasetKey FROM gbif WHERE gbifid = ", this_record$gbifid, ")"))
     
-    gbif_record_url <- paste0("https://www.gbif.org/occurrence/", this_record$gbifID)
-    occurrenceID <- this_record$occurrenceID
+    gbif_record_url <- paste0("https://www.gbif.org/occurrence/", this_record$gbifid)
+    occurrenceID <- this_record$occurrenceid
     
-    html_to_print <- paste0("<h4>Record gbifID: ", this_record$gbifID)
+    html_to_print <- paste0("<h4>Record gbifid: ", this_record$gbifid)
                             
     html_to_print <- paste0(html_to_print, 
                             actionButton("delrecord", 
@@ -609,8 +586,8 @@ server <- function(input, output, session) {
       }
     }
     
-    if (this_record$catalogNumber != ""){
-      html_to_print <- paste0(html_to_print, "<dt>Catalog No.</dt><dd>", this_record$catalogNumber, "</dd>")
+    if (this_record$catalognumber != ""){
+      html_to_print <- paste0(html_to_print, "<dt>Catalog No.</dt><dd>", this_record$catalognumber, "</dd>")
     }
     
     if (input$i != "None"){
@@ -624,7 +601,7 @@ server <- function(input, output, session) {
     }
     
     #Images
-    images <- dbGetQuery(gbif_db, paste0("SELECT * FROM multimedia WHERE gbifID = ", this_record$gbifID, " AND type = 'StillImage'"))
+    images <- dbGetQuery(gbif_db, paste0("SELECT * FROM multimedia WHERE gbifid = ", this_record$gbifid, " AND type = 'StillImage'"))
     if (dim(images)[1] > 0){
       
       html_to_print <- paste0(html_to_print, "<dt>Images</dt><dd>")
@@ -650,7 +627,7 @@ server <- function(input, output, session) {
     
     html_to_print <- paste0(html_to_print, "</dl>")
     
-    verbatim_json <- paste0("http://api.gbif.org/v1/occurrence/", this_record$gbifID, "/verbatim")
+    verbatim_json <- paste0("http://api.gbif.org/v1/occurrence/", this_record$gbifid, "/verbatim")
     
     html_to_print <- paste0(html_to_print, "<a href=\"", verbatim_json, "\" target = _blank>Verbatim JSON</a><br>")
     
@@ -665,31 +642,31 @@ server <- function(input, output, session) {
     req(input$table_rows_selected)
     
     if (input$i == "None"){
-      this_summary_ids <- dbGetQuery(gbif_db, "SELECT gbifID FROM gbif WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) AND ignorerow = 0")
+      this_summary_ids <- dbGetQuery(gbif_db, "SELECT gbifid FROM gbif WHERE gbifid NOT IN (SELECT DISTINCT gbifid FROM issues) AND ignorerow = 0")
     }else{
-      this_summary_ids <- dbGetQuery(gbif_db, paste0("SELECT gbifID FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') AND ignorerow = 0"))
+      this_summary_ids <- dbGetQuery(gbif_db, paste0("SELECT gbifid FROM gbif WHERE gbifid IN (SELECT gbifid from issues WHERE issue = '", input$i, "') AND ignorerow = 0"))
     }
     #cat(this_summary_ids)
-    this_record <- dbExecute(gbif_db, paste0("UPDATE gbif SET ignorerow = 1 WHERE gbifID = ", this_summary_ids[input$table_rows_selected,]))
+    this_record <- dbExecute(gbif_db, paste0("UPDATE gbif SET ignorerow = 1 WHERE gbifid = ", this_summary_ids[input$table_rows_selected,]))
     
     if (input$i == "None"){
-      cols <- "gbifID, scientificName, decimalLatitude, decimalLongitude, locality, country"
+      cols <- "gbifid, scientificName, decimalLatitude, decimalLongitude, locality, country"
     }else if (input$i %in% spatial_issues){
-      cols <- "gbifID, scientificName, decimalLatitude, decimalLongitude, locality, country"
+      cols <- "gbifid, scientificName, decimalLatitude, decimalLongitude, locality, country"
     }else if (input$i %in% depth_issues){
-      cols <- "gbifID, scientificName, minimumDepthInMeters, maximumDepthInMeters, verbatimDepth"
+      cols <- "gbifid, scientificName, minimumDepthInMeters, maximumDepthInMeters, verbatimDepth"
     }else if (input$i %in% elev_issues){
-      cols <- "gbifID, scientificName, minimumElevationInMeters, maximumElevationInMeters, verbatimElevation"
+      cols <- "gbifid, scientificName, minimumElevationInMeters, maximumElevationInMeters, verbatimElevation"
     }else if (input$i %in% date_issues){
-      cols <- "gbifID, scientificName, eventDate, eventTime, startDayOfYear, endDayOfYear,year, month, day"
+      cols <- "gbifid, scientificName, eventDate, eventTime, startDayOfYear, endDayOfYear,year, month, day"
     }else{
-      cols <- "gbifID, scientificName, recordedBy, locality, country"
+      cols <- "gbifid, scientificName, recordedBy, locality, country"
     }
     
     if (input$i == "None"){
-      datarows <- dbGetQuery(gbif_db, paste0("SELECT ", cols, " FROM verbatim WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)"))
+      datarows <- dbGetQuery(gbif_db, paste0("SELECT ", cols, " FROM verbatim WHERE gbifid NOT IN (SELECT DISTINCT gbifid FROM issues) and gbifid NOT IN (SELECT gbifid FROM gbif WHERE ignorerow = 1)"))
     }else{
-      datarows <- dbGetQuery(gbif_db, paste0("SELECT ", cols, " FROM verbatim WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and gbifID NOT IN (SELECT gbifID FROM gbif WHERE ignorerow = 1)"))
+      datarows <- dbGetQuery(gbif_db, paste0("SELECT ", cols, " FROM verbatim WHERE gbifid IN (SELECT gbifid from issues WHERE issue = '", input$i, "') and gbifid NOT IN (SELECT gbifid FROM gbif WHERE ignorerow = 1)"))
     }
     
     datarows <- data.frame(datarows, stringsAsFactors = FALSE)
@@ -701,7 +678,10 @@ server <- function(input, output, session) {
   # Record map ----
   output$mymap <- renderLeaflet({
     req(input$i)
-    datarows <- dbGetQuery(gbif_db, paste0("SELECT gbifID, decimalLatitude, decimalLongitude FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and ignorerow = 0"))
+    
+    gbif_db <- session$userData$gbif_db
+    
+    datarows <- dbGetQuery(gbif_db, paste0("SELECT gbifid, decimalLatitude, decimalLongitude FROM gbif WHERE gbifid IN (SELECT gbifid from issues WHERE issue = '", input$i, "') and ignorerow = 0"))
     points <- datarows[input$table_rows_selected,]
     
     #check if lat and lon exist
@@ -744,7 +724,10 @@ server <- function(input, output, session) {
       paste(input$i, ".csv", sep = "")
     },
     content = function(file) {
-      write.csv(dbGetQuery(gbif_db, paste0("SELECT * FROM gbif WHERE gbifID IN (SELECT gbifID from issues WHERE issue = '", input$i, "') and ignorerow = 0")), file, row.names = FALSE)
+      
+      gbif_db <- session$userData$gbif_db
+      
+      write.csv(dbGetQuery(gbif_db, paste0("SELECT * FROM gbif WHERE gbifid IN (SELECT gbifid from issues WHERE issue = '", input$i, "') and ignorerow = 0")), file, row.names = FALSE)
     }
   )
   
@@ -754,7 +737,10 @@ server <- function(input, output, session) {
       paste("NO_ISSUES.csv", sep = "")
     },
     content = function(file) {
-      write.csv(dbGetQuery(gbif_db, "SELECT * FROM gbif WHERE gbifID NOT IN (SELECT DISTINCT gbifID FROM issues) and ignorerow = 0"), file, row.names = FALSE)
+      
+      gbif_db <- session$userData$gbif_db
+      
+      write.csv(dbGetQuery(gbif_db, "SELECT * FROM gbif WHERE gbifid NOT IN (SELECT DISTINCT gbifid FROM issues) and ignorerow = 0"), file, row.names = FALSE)
     }
   )
   
@@ -780,6 +766,8 @@ server <- function(input, output, session) {
       paste("occurrence.csv", sep = "")
     },
     content = function(file) {
+      gbif_db <- session$userData$gbif_db
+      
       write.csv(dbGetQuery(gbif_db, "SELECT * FROM gbif WHERE ignorerow = 0"), file, row.names = FALSE)
     }
   )
@@ -809,7 +797,9 @@ server <- function(input, output, session) {
       paste("verbatim.csv", sep = "")
     },
     content = function(file) {
-      write.csv(dbGetQuery(gbif_db, "SELECT * FROM verbatim WHERE gbifID IN (SELECT gbifID FROM gbif WHERE ignorerow = 0)"), file, row.names = FALSE)
+      gbif_db <- session$userData$gbif_db
+      
+      write.csv(dbGetQuery(gbif_db, "SELECT * FROM verbatim WHERE gbifid IN (SELECT gbifid FROM gbif WHERE ignorerow = 0)"), file, row.names = FALSE)
     }
   )
   
@@ -885,29 +875,8 @@ server <- function(input, output, session) {
     HTML("<p class=\"pull-right\">Click a record for details</p>")
   })
   
-  
-  session$onSessionEnded(function() {
-    dbDisconnect(gbif_db)
-    if (persistent_db == FALSE){
-      try(unlink("data", recursive = TRUE), silent = TRUE)
-    }
-    cat("Removing objects\n")
-    rm(list = ls())
-  })
-  
 }
 
 
-# Create Shiny app ----
-shinyApp(ui = ui, server = server, onStart = function() {
-  cat("Loading\n")
-  #Mount path
-  onStop(function() {
-    dbDisconnect(gbif_db)
-    if (persistent_db == FALSE){
-      #try(unlink("data", recursive = TRUE), silent = TRUE)
-    }
-    cat("Removing objects\n")
-    rm(list = ls())
-  })
-})
+# Run Shiny app ----
+shinyApp(ui, server)
