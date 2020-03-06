@@ -103,5 +103,30 @@ for (i in 1:length(distinct_issues)){
   dbExecute(gbif_db, paste0("INSERT INTO issues (gbifID, issue) SELECT gbifID, '", distinct_issues[i], "' FROM gbif WHERE issue LIKE '%", distinct_issues[i], "%'"))
 }
 
+
+
+#indices
+print("Calculating field statistics")
+
+fields <- dbGetQuery(gbif_db, "PRAGMA table_info(gbif)")
+
+fields <- dplyr::filter(fields, name != 'ignorerow')
+fields <- dplyr::filter(fields, name != 'gbifid')
+
+for (f in seq(225, dim(fields)[1])){
+  
+  this_field <- stringr::str_replace(fields$name[f], fixed("group"), "\"group\"")
+  this_field <- stringr::str_replace(this_field, "island\"group\"", "islandgroup")
+  this_field <- stringr::str_replace(this_field, "order", "\"order\"")
+  this_field <- stringr::str_replace(this_field, fixed("references"), "\"references\"")
+  this_field <- stringr::str_replace(this_field, fixed("associated\"references\""), "associatedreferences")
+  this_field <- stringr::str_replace(this_field, fixed("geo\"references\"ources"), "georeferencesources")
+  this_field <- stringr::str_replace(this_field, fixed("identification\"references\""), "identificationreferences")
+  this_field <- stringr::str_replace(this_field, fixed("\"order\"key"), "orderkey")
+  
+  n <- dbSendQuery(gbif_db, paste0("CREATE INDEX IF NOT EXISTS gbif_", fields$name[f], " ON gbif(", this_field, ")"))
+  dbClearResult(n)
+}
+
 # Close db ----
 dbDisconnect(gbif_db)

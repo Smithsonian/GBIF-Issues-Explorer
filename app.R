@@ -146,7 +146,7 @@ ui <- fluidPage(
                        withSpinner(DT::dataTableOutput("fields_table"))
                 ),
                 column(width = 6, 
-                       uiOutput("fields_details_h"),
+                       withSpinner(uiOutput("fields_details_h")),
                        DT::dataTableOutput("fields_details"),
                        uiOutput("precision_note")
                 )
