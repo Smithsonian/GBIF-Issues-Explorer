@@ -28,11 +28,11 @@ Main page, showing the number of records with specific issues:
 
 Exploring issues by looking at record details:
 
-![GBIF Issues Explorer2](https://user-images.githubusercontent.com/2302171/76111548-7760c400-5fae-11ea-83bc-959f18742c38.png)
+![GBIF Issues Explorer2](https://user-images.githubusercontent.com/2302171/76112339-06221080-5fb0-11ea-85af-20b9f9c8b0a7.png)
 
 Explore the data fields, see number of records without data, and distinct values:
 
-![GBIF Issues Explorer3](https://user-images.githubusercontent.com/2302171/76111563-7c257800-5fae-11ea-8fc7-c0ef451bad1d.png)
+![GBIF Issues Explorer3](https://user-images.githubusercontent.com/2302171/76112397-205bee80-5fb0-11ea-9a21-4cb07212fb67.png)
 
 ## Testing the app in local computer
 
