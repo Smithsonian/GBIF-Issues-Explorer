@@ -24,7 +24,7 @@ The app can be used to:
 
 Main page, showing the number of records with specific issues:
 
-![GBIF Issues Explorer](https://user-images.githubusercontent.com/2302171/76111511-67e17b00-5fae-11ea-9206-c686598a8ed9.png)
+![gbif1](https://user-images.githubusercontent.com/2302171/76112272-e4288e00-5faf-11ea-8c3d-a204ff75697a.png)
 
 Exploring issues by looking at record details:
 
