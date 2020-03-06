@@ -66,7 +66,7 @@ ui <- fluidPage(
           ),
           column(width = 6,
                  br(),
-                 DT::dataTableOutput("summaryTable"),
+                 withSpinner(DT::dataTableOutput("summaryTable")),
                  br(),
                  uiOutput("download_doi")
                  )
@@ -84,7 +84,7 @@ ui <- fluidPage(
         ),
      
      # Tab:Explore ----
-      tabPanel("Explore", 
+      tabPanel("Explore Issues", 
                fluidRow(
                column(width = 4,
                       br(),
@@ -138,7 +138,7 @@ ui <- fluidPage(
           )
       ),
      # Tab:DataFields ----
-     tabPanel("Fields Summary", 
+     tabPanel("Explore Data Fields", 
               br(),
               fluidRow(
                 column(width = 6, 
@@ -146,7 +146,9 @@ ui <- fluidPage(
                        withSpinner(DT::dataTableOutput("fields_table"))
                 ),
                 column(width = 6, 
-                       DT::dataTableOutput("fields_details")
+                       uiOutput("fields_details_h"),
+                       DT::dataTableOutput("fields_details"),
+                       uiOutput("precision_note")
                 )
               )
               
@@ -201,8 +203,6 @@ server <- function(input, output, session) {
         )
      }
     })
-  
-  
   
   
   # Submit button ----
@@ -539,9 +539,22 @@ server <- function(input, output, session) {
       cols <- "gbifid, scientificName, minimumElevationInMeters, maximumElevationInMeters, verbatimElevation"
     }else if (input$i %in% date_issues){
       cols <- "gbifid, scientificName, eventDate, eventTime, startDayOfYear, endDayOfYear,year, month, day"
+    }else if (input$i %in% taxo_issues){
+      cols <- "gbifid, scientificName, kingdom, phylum, class, \"order\", family, genus, higherclassification"
+    }else if (input$i == "BASIS_OF_RECORD_INVALID"){
+      cols <- "gbifid, scientificName, basisOfRecord, recordedBy, locality, country"
+    }else if (input$i == "REFERENCES_URI_INVALID"){
+      cols <- "gbifid, scientificName, \"references\", recordedBy, locality, country"
+    }else if (input$i == "INDIVIDUAL_COUNT_INVALID"){
+      cols <- "gbifid, scientificName, individualcount, recordedBy, locality, country"
+    }else if (input$i == "TYPE_STATUS_INVALID"){
+      cols <- "gbifid, scientificName, typestatus, recordedBy, locality, country"
     }else{
       cols <- "gbifid, scientificName, recordedBy, locality, country"
     }
+    
+    
+    
     
     query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifid IN (SELECT gbifid from issues WHERE issue = '", input$i, "') and gbifid NOT IN (SELECT gbifid FROM gbif WHERE ignorerow = 1)")
     print(query)
