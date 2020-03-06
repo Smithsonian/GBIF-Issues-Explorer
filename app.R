@@ -29,7 +29,7 @@ source("functions.R")
 
 
 # System Settings ----
-app_ver <- "0.4.0"
+app_ver <- "0.4.1"
 github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
 
 occ_file <- "data/occurrence.txt"
