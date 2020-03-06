@@ -1,18 +1,8 @@
 # GBIF Issues Explorer
 
-## Winner of 2nd Place Award in GBIF 2018 Ebbe Nielsen Challenge!
-
-The Global Biodiversity Information Facility ([GBIF](https://gbif.org)) Secretariat announced today that the Smithsonian Institution’s Digitization Program Office ([DPO](http://dpo.si.edu)) was selected by an expert jury as a [winner in the 2018 Ebbe Nielsen Challenge](https://www.gbif.org/news/4TuHBNfycgO4GEMOKkMi4u/six-winners-top-the-2018-ebbe-nielsen-challenge). The entry, submitted by DPO Informatics Program Officer Luis J. Villanueva, the GBIF Issues Explorer, won a Second Place award among 23 entries from countries around the world. The Challenge was open to software tools that used GBIF data or tools to promote open science and open biodiversity data.
-
-[More details...](http://dpo.si.edu/blog/smithsonian-institution%E2%80%99s-digitization-program-office-wins-prize-gbif-2018-ebbe-nielsen)
-
-![ebbenielsen2018](https://user-images.githubusercontent.com/2302171/47153516-e2243900-d2ad-11e8-9c62-ed6a919f2e69.png)
-
 ## Intro 
 
 This [Shiny](https://shiny.rstudio.com/) app allows researchers and data/collection managers to navigate the records with issues in a GBIF Darwin Core Archive.
-
-![screencapture-127-0-0-1-4614-2018-09-03-21_32_27](https://user-images.githubusercontent.com/2302171/45005415-3787dd80-afc1-11e8-80d1-4c12e417ad19.png)
 
 The app can be used to:
 
@@ -22,7 +12,19 @@ The app can be used to:
  * Determine if an issue would affect an analysis:
    * For example, a COUNTRY_COORDINATE_MISMATCH could be because the coordinates fall just outside the country borders. Is this an error in the coordinates or an expected result of an occurrence in water?
 
-![screencapture-127-0-0-1-4614-2018-09-03-21_34_01](https://user-images.githubusercontent.com/2302171/45005423-466e9000-afc1-11e8-8b4e-dc3f9cc9870e.png)
+## Screenshots
+
+Main page, showing the number of records with specific issues:
+
+![gbif1](https://user-images.githubusercontent.com/2302171/76112272-e4288e00-5faf-11ea-8c3d-a204ff75697a.png)
+
+Exploring issues by looking at record details:
+
+![GBIF Issues Explorer2](https://user-images.githubusercontent.com/2302171/76112339-06221080-5fb0-11ea-85af-20b9f9c8b0a7.png)
+
+Explore the data fields, see number of records without data, and distinct values (new in version 0.4):
+
+![GBIF Issues Explorer3](https://user-images.githubusercontent.com/2302171/76112397-205bee80-5fb0-11ea-9a21-4cb07212fb67.png)
 
 ## Testing the app in local computer
 
@@ -44,6 +46,12 @@ runGitHub("GBIF-Issues-Explorer", "Smithsonian")
 ```
 
 Please note that the installation of the required packages may take a few minutes to download and install. Future versions will try to reduce the number of dependencies.
+
+## Winner of 2nd Place Award in GBIF 2018 Ebbe Nielsen Challenge!
+
+The Global Biodiversity Information Facility ([GBIF](https://gbif.org)) Secretariat announced today that the Smithsonian Institution’s Digitization Program Office ([DPO](http://dpo.si.edu)) was selected by an expert jury as a [winner in the 2018 Ebbe Nielsen Challenge](https://www.gbif.org/news/4TuHBNfycgO4GEMOKkMi4u/six-winners-top-the-2018-ebbe-nielsen-challenge). The entry, submitted by DPO Informatics Program Officer Luis J. Villanueva, the GBIF Issues Explorer, won a Second Place award among 23 entries from countries around the world. The Challenge was open to software tools that used GBIF data or tools to promote open science and open biodiversity data.
+
+[More details...](http://dpo.si.edu/blog/smithsonian-institution%E2%80%99s-digitization-program-office-wins-prize-gbif-2018-ebbe-nielsen)
 
 ## Install
 
@@ -82,6 +90,6 @@ install.packages(
     )
 ```
 
-The first time the app is run, it takes some time to create a database, in particular for large data files. Afterwards, it uses the database, so it will be faster. 
+The first time the app is run, it takes some time to create a local database, in particular for large data files. Afterwards, it uses the local database, so it will be faster. 
 
 Please feel free to submit issues, ideas, suggestions, and pull requests. 
