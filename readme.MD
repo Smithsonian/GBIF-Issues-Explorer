@@ -12,8 +12,6 @@ The Global Biodiversity Information Facility ([GBIF](https://gbif.org)) Secretar
 
 This [Shiny](https://shiny.rstudio.com/) app allows researchers and data/collection managers to navigate the records with issues in a GBIF Darwin Core Archive.
 
-![screencapture-127-0-0-1-4614-2018-09-03-21_32_27](https://user-images.githubusercontent.com/2302171/45005415-3787dd80-afc1-11e8-80d1-4c12e417ad19.png)
-
 The app can be used to:
 
  * Determine the source of issues:
@@ -22,7 +20,19 @@ The app can be used to:
  * Determine if an issue would affect an analysis:
    * For example, a COUNTRY_COORDINATE_MISMATCH could be because the coordinates fall just outside the country borders. Is this an error in the coordinates or an expected result of an occurrence in water?
 
-![screencapture-127-0-0-1-4614-2018-09-03-21_34_01](https://user-images.githubusercontent.com/2302171/45005423-466e9000-afc1-11e8-8b4e-dc3f9cc9870e.png)
+## Screenshots
+
+Main page, showing the number of records with specific issues:
+
+![GBIF Issues Explorer](https://user-images.githubusercontent.com/2302171/76111511-67e17b00-5fae-11ea-9206-c686598a8ed9.png)
+
+Exploring issues by looking at record details:
+
+![GBIF Issues Explorer2](https://user-images.githubusercontent.com/2302171/76111548-7760c400-5fae-11ea-83bc-959f18742c38.png)
+
+Explore the data fields, see number of records without data, and distinct values:
+
+![GBIF Issues Explorer3](https://user-images.githubusercontent.com/2302171/76111563-7c257800-5fae-11ea-8fc7-c0ef451bad1d.png)
 
 ## Testing the app in local computer
 
@@ -82,6 +92,6 @@ install.packages(
     )
 ```
 
-The first time the app is run, it takes some time to create a database, in particular for large data files. Afterwards, it uses the database, so it will be faster. 
+The first time the app is run, it takes some time to create a local database, in particular for large data files. Afterwards, it uses the local database, so it will be faster. 
 
 Please feel free to submit issues, ideas, suggestions, and pull requests. 
