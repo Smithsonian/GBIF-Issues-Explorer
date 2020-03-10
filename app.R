@@ -29,7 +29,7 @@ source("functions.R")
 
 
 # System Settings ----
-app_ver <- "0.4.1"
+app_ver <- "0.4.2"
 github_link <- "https://github.com/Smithsonian/GBIF-Issues-Explorer"
 
 occ_file <- "data/occurrence.txt"
@@ -66,7 +66,7 @@ ui <- fluidPage(
           ),
           column(width = 6,
                  br(),
-                 withSpinner(DT::dataTableOutput("summaryTable")),
+                 DT::dataTableOutput("summaryTable"),
                  br(),
                  uiOutput("download_doi")
                  )
@@ -203,6 +203,12 @@ server <- function(input, output, session) {
         )
      }
     })
+  
+  
+  output$distinct_issues <- renderUI({
+    h4("Load a DwC zip file to explore the issues.")
+  })
+  
   
   
   # Submit button ----
@@ -557,7 +563,7 @@ server <- function(input, output, session) {
     
     
     query <- paste0("SELECT ", cols, " FROM verbatim WHERE gbifid IN (SELECT gbifid from issues WHERE issue = '", input$i, "') and gbifid NOT IN (SELECT gbifid FROM gbif WHERE ignorerow = 1)")
-    print(query)
+    #print(query)
     datarows <- dbGetQuery(gbif_db, query)
 
     df <- data.frame(datarows, stringsAsFactors = FALSE)
@@ -862,8 +868,13 @@ server <- function(input, output, session) {
          <li>Load the data from the occurrence, verbatim, multimedia, and dataset tables to the database</li>
          <li>Generate summary statistics of the issues</li>
          </ul>
-         <p>Then, you can click on the 'Explore' tab to see how many records have been tagged with a particular issue.
-         <p>Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown, including a map if the records has coordinates. You can choose to delete the row from the local database.</p>
+        <p>As an alternative, you can copy the zip file to the `data` folder and run the `load_from_DwC_zip.R` script. It will run the same steps as above (skipping downloading the file) from the command line. </p>
+
+        <p>Then, you can click the 'Explore Issues' tab to see how many records have been tagged with a particular issue.</p>
+
+        <p>Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown, including a map using Leaflet (if the record has coordinates). You can choose to delete the row from the local database.</p>
+
+        <p>The 'Explore Data Fields' will show a summary and top data values in all fields of the `occurrence.txt` file (except for the gbifID field).</p>
          </div></div>")
   })
   

@@ -12,6 +12,40 @@ The app can be used to:
  * Determine if an issue would affect an analysis:
    * For example, a COUNTRY_COORDINATE_MISMATCH could be because the coordinates fall just outside the country borders. Is this an error in the coordinates or an expected result of an occurrence in water?
 
+Occurrence records in GBIF can be tagged with a number of issues that their system has detected. However, like the processing information page indicates:
+
+> Not all issues indicate bad data. Some are merley flagging the fact that GBIF has altered values during processing.
+
+This tool allows collection and data managers, as well as researchers, to explore issues in GBIF Darwin Core Archive downloads in an easy web-based interface. Just enter a GBIF download key and the tool will download the zip file, create a local database, and display the issues in the data contained. Once provided with the GBIF key, this tool will:
+
+ 1. Download the zip archive
+ 1. Extract the files
+ 1. Create a local database
+ 1. Load the data from the occurrence, verbatim, multimedia, and dataset tables to the database
+ 1. Generate summary statistics of the issues
+
+To use, just provide the key to a Darwin Core Archive from GBIF. The download key can be requested via the GBIF API or on the website. If your download URL is:
+
+`www.gbif.org/occurrence/download/0001419-180824113759888`
+
+Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool. The first time the app is run, it takes some time to create a local database, in particular for large data files. Afterwards, it uses the local database, so it will be faster. 
+
+As an alternative, you can copy the zip file to the `data` folder and run the `load_from_DwC_zip.R` script. It will run the same steps as above (skipping downloading the file) from the command line. 
+
+Then, you can click the 'Explore Issues' tab to see how many records have been tagged with a particular issue.
+
+Once you select an issue, a table will display the rows that have been tagged with that issue. If you click on a row, more details of the occurrence record will be shown, including a map using Leaflet (if the record has coordinates). You can choose to delete the row from the local database.
+
+The 'Explore Data Fields' will show a summary and top data values in all fields of the `occurrence.txt` file (except for the gbifID field). 
+
+## Features
+
+ * Load a GBIF DwC download from the web or from a local zip file
+ * Navigate the issues in the records
+   * Spatial issues are shown with relevant fields and a map
+ * Explore the data included in each field
+   * How many are null or empty, how many distinct values there are?
+
 ## Screenshots
 
 Main page, showing the number of records with specific issues:
@@ -55,11 +89,6 @@ The Global Biodiversity Information Facility ([GBIF](https://gbif.org)) Secretar
 
 ## Install
 
-To use, just provide the key to a Darwin Core Archive from GBIF. The download key can be requested via the GBIF API or on the website. If your download URL is:
-
-`www.gbif.org/occurrence/download/0001419-180824113759888`
-
-Then, the last part, '0001419-180824113759888' is the GBIF key you will need to provide this tool.
 
 The app requires R 3.3, or later, and these packages:
 
@@ -89,7 +118,5 @@ install.packages(
       "shinycssloaders")
     )
 ```
-
-The first time the app is run, it takes some time to create a local database, in particular for large data files. Afterwards, it uses the local database, so it will be faster. 
 
 Please feel free to submit issues, ideas, suggestions, and pull requests. 

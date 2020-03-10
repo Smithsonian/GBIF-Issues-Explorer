@@ -7,6 +7,9 @@ output$explore_fields <- renderUI({
 # fields_table ----
 output$fields_table <- DT::renderDataTable({
   
+  if (file.exists(database_file) == FALSE){
+    req(FALSE)
+  }
   
   gbif_db <- dbConnect(RSQLite::SQLite(), database_file)
   
@@ -78,7 +81,7 @@ output$fields_table <- DT::renderDataTable({
       
       #print(this_field)
       no_rows_null_q <- paste0("SELECT count(*) as no_rows from gbif WHERE ", this_field, " IS NULL OR ", this_field, " = ''")
-      print(no_rows_null_q)
+      #print(no_rows_null_q)
       no_rows_null <- dbGetQuery(gbif_db, no_rows_null_q)
       
       no_rows_notnull_pc1 <- round(((no_rows_total - no_rows_null)/no_rows_total) * 100, 2)
@@ -157,14 +160,12 @@ output$fields_details <- DT::renderDataTable({
   }else if (field_to_check == "issue"){
     f_query <- paste0("SELECT CASE WHEN ", field_to_check, " IS NULL THEN '[NULL]' WHEN ", field_to_check, " = '' THEN '[EMPTY]' ELSE REPLACE(", field_to_check, ", ';', '; ') END , count(*) as no_records FROM gbif GROUP BY ", field_to_check, " ORDER BY no_records DESC LIMIT 500")
   }else{
-    f_query <- paste0("SELECT CASE WHEN ", field_to_check, " IS NULL THEN '[NULL]' WHEN ", field_to_check, " = '' THEN '[EMPTY]' ELSE ", field_to_check, " END , count(*) as no_records FROM gbif GROUP BY ", field_to_check, " ORDER BY no_records DESC LIMIT 500")
+    f_query <- paste0("SELECT CASE WHEN ", field_to_check, " IS NULL THEN '[NULL]' WHEN ", field_to_check, " = '' THEN '[EMPTY]' ELSE CAST(", field_to_check, " as TEXT) END , count(*) as no_records FROM gbif GROUP BY ", field_to_check, " ORDER BY no_records DESC LIMIT 500")
   }
   
-  print(f_query)
+  #print(f_query)
   
   field_data <- dbGetQuery(gbif_db, f_query)
-  
-  cat(summary(field_data))
   
   for (i in seq(1, dim(field_data)[1])){
     field_data[i, 3] <- round((field_data[i, 2] / no_rows) * 100, 2)
