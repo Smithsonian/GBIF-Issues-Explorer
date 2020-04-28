@@ -1,5 +1,9 @@
-
 #Load DwC zip file (in "data" folder)
+#
+# For use in Mac or Linux systems that have these tools installed:
+#  - sqlite3
+#  - unzip (for files > 3GB)
+
 
 library("DT")
 library("dplyr")
@@ -30,10 +34,15 @@ if (length(zipfile) == 0){
   stop("There are more than 1 zipfiles in data")
 }else{
   
-  #unzip has issues with large files
-  #unzip(paste0('data/', zipfile), exdir = 'data')
-  system2("unzip", args = c("-d", "data", paste0('data/', zipfile)))
-  
+  fileinfo <- file.info(paste0('data/', zipfile))
+  if (fileinfo$size < 3000000000){
+    #unzip has issues with large files
+    unzip(paste0('data/', zipfile), exdir = 'data')
+  }else{
+    #Try the command line
+    system2("unzip", args = c("-d", "data", paste0('data/', zipfile)))
+  }
+
   #Check if cols changed
   gbif_check <- data.table::fread(input = occ_file, header = FALSE, sep = "\t", stringsAsFactors = FALSE, encoding = "UTF-8", quote = "", nrows = 1)
   
