@@ -123,6 +123,7 @@ ui <- fluidPage(
                             #HTML("<p class=\"pull-right\">Click a record for details</p>")
                         )
                      ),
+                     uiOutput("table_heading"),
                      withSpinner(DT::dataTableOutput("table"))
                ),
                column(width=5, 
@@ -195,7 +196,9 @@ server <- function(input, output, session) {
     if (!file.exists(database_file)){
         tagList(
           h3("Explore the issues that GBIF has identified in the data in a DwC download."),
-          textInput(inputId = "gbif_key", label = "GBIF Download Key:", value = "0046569-180508205500799"),
+          #Example
+          #textInput(inputId = "gbif_key", label = "GBIF Download Key:", value = "0046569-180508205500799"),
+          textInput(inputId = "gbif_key", label = "GBIF Download Key:"),
           actionButton("submitkey", 
                        label = "Submit", 
                        class = "btn btn-primary",
@@ -571,6 +574,13 @@ server <- function(input, output, session) {
     df
   })
 
+  
+  output$table_heading <- renderUI({
+    req(input$i)
+    h3("Rows in the 'verbatim' file with this issue:")
+  })
+  
+  
   output$table <- DT::renderDataTable({
     req(input$i)
     DT::datatable(datarows(), escape = FALSE, options = list(searching = TRUE, ordering = TRUE, pageLength = 10), rownames = FALSE, selection = 'single')
