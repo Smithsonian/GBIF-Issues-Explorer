@@ -1,5 +1,9 @@
 # GBIF Issues Explorer
 
+# Archived
+
+This repo is now archived. For a similar set of features, check https://github.com/Smithsonian/GBIF-Dataset-Explorer
+
 ## Intro 
 
 This [Shiny](https://shiny.rstudio.com/) app allows researchers and data/collection managers to navigate the records with issues in a GBIF Darwin Core Archive.
